@@ -236,6 +236,7 @@
 !                              semivolatile POA simulations; Removed tracers
 !                              for old SOA simulation (H. Pye)
 !  20 Aug 2013 - R. Yantosca - Removed "define.h", this is now obsolete
+!  27 Feb 2013 - J. Fisher   - Add MOH (methanol)
 !******************************************************************************
 !
 
@@ -322,6 +323,7 @@
       INTEGER            :: IDTPYPAN,IDTMAP
       INTEGER            :: IDTAP
       INTEGER            :: IDTMPN
+      INTEGER            :: IDTMOH
 
       ! For tagged Ox simulation
       INTEGER            :: IDTO3Strt
@@ -515,6 +517,7 @@
       ! SOAupdate: added gas phase NAP chemistry (hotp 6/24/09)
       ! semivolpoa5: add IVOC chemistry (hotp 3/30/09)
       INTEGER            :: IDBFNAP
+      INTEGER            :: IDBFMOH
 
       !BIOMASS BURNING  !(FP,01/27/10)
       INTEGER            :: IDBNO,   IDBCO,   IDBALK4, IDBACET 
@@ -533,6 +536,7 @@
       INTEGER            :: IDBGLYC, IDBHAC      
       ! add biomass burning emiss too (hotp 8/24/09)
       INTEGER            :: IDBNAP
+      INTEGER            :: IDBMOH
 
       CONTAINS
 
@@ -1227,6 +1231,17 @@
 
                COUNT_BB  = COUNT_BB + 1
                IDBHAC    = COUNT_BB
+
+            !--------------------------------
+            ! MOH
+            !--------------------------------
+            CASE ( 'MOH' )
+               COUNT    = COUNT + 1
+               IDTMOH   = N
+               IDBFMOH  = COUNT
+
+               COUNT_BB  = COUNT_BB + 1
+               IDBMOH    = COUNT_BB
 
             !--------------------------------
             ! new PAN species
@@ -4219,6 +4234,7 @@
       IDTMPAN   = 0
       IDTNIPAN  = 0
       IDTMPN    = 0
+      IDTMOH    = 0
       ! +++++++++++++++++
       ! jpp for bromine
       ! 6/5/09
@@ -4771,6 +4787,7 @@
       IDBFGLYX  = 0
       IDBFMGLY  = 0
       IDBFHAC   = 0
+      IDBFMOH   = 0
       ! SOAudpate: for gas phase NAP chemistry (hotp 6/24/09)
       ! semivolpoa5: IVOCs (hotp 3/30/09)
       IDBFNAP   = 0
@@ -4800,6 +4817,7 @@
       IDBGLYC   = 0
       IDBGLYX   = 0
       IDBMGLY   = 0
+      IDBMOH    = 0
 !kjw
       IDBCH4    = 0
 !kjw

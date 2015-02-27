@@ -957,15 +957,27 @@
       ! Kc is the conversion rate from cloud condensate to precip [s^-1]
       REAL*8, PARAMETER    :: KC        = 5d-3
 
-      ! CONV_H2O2 = 0.6 * SQRT( 1.9 ), used for the ice to gas ratio for H2O2
+! Prior to 2/2015
+!      ! CONV_H2O2 = 0.6 * SQRT( 1.9 ), used for the ice to gas ratio for H2O2
+!      ! 0.6 is ( sticking  coeff H2O2  / sticking  coeff  water )
+!      ! 1.9 is ( molecular weight H2O2 / molecular weight water )
+!      REAL*8, PARAMETER    :: CONV_H2O2 = 8.27042925126d-1
+!
+!      ! CONV_NH3 = 0.6 * SQRT( 0.9 ), used for the ice to gas ratio for NH3
+!      ! 0.6 is ( sticking  coeff  NH3 / sticking  coeff  water )
+!      ! 0.9 is ( molecular weight NH3 / molecular weight water )
+!      REAL*8, PARAMETER    :: CONV_NH3  = 5.69209978831d-1
+      ! CONV_H2O2 = 0.6 * SQRT( 0.53 ), used for the ice to gas ratio for
+      ! H2O2
       ! 0.6 is ( sticking  coeff H2O2  / sticking  coeff  water )
-      ! 1.9 is ( molecular weight H2O2 / molecular weight water )
-      REAL*8, PARAMETER    :: CONV_H2O2 = 8.27042925126d-1
+      ! 0.53 is ( molecular weight water / molecular weight H2O2 )
+      REAL*8, PARAMETER    :: CONV_H2O2 = 4.36564d-1     
 
-      ! CONV_NH3 = 0.6 * SQRT( 0.9 ), used for the ice to gas ratio for NH3
+      ! CONV_NH3 = 0.6 * SQRT( 1.06 ), used for the ice to gas ratio for
+      ! NH3
       ! 0.6 is ( sticking  coeff  NH3 / sticking  coeff  water )
-      ! 0.9 is ( molecular weight NH3 / molecular weight water )
-      REAL*8, PARAMETER    :: CONV_NH3  = 5.69209978831d-1
+      ! 1.06 is ( molecular weight water /  molecular weight NH3 )
+      REAL*8, PARAMETER    :: CONV_NH3  = 6.17395d-1
 
       REAL*8,   SAVE       :: POP_HSTAR, POP_DEL_H, POP_DEL_Hw
       REAL*8               :: DUM
@@ -3012,15 +3024,27 @@
 !
 ! !DEFINED PARAMETERS:
 !
-      ! CONV_H2O2 = 0.6 * SQRT( 1.9 ), used for the ice to gas ratio for H2O2
+! Prior to 2/2015
+!      ! CONV_H2O2 = 0.6 * SQRT( 1.9 ), used for the ice to gas ratio for H2O2
+!      ! 0.6 is ( sticking  coeff H2O2  / sticking  coeff  water )
+!      ! 1.9 is ( molecular weight H2O2 / molecular weight water )
+!      REAL*8, PARAMETER :: CONV_H2O2 = 8.27042925126d-1
+!
+!      ! CONV_NH3 = 0.6 * SQRT( 0.9 ), used for the ice to gas ratio for NH3
+!      ! 0.6 is ( sticking  coeff  NH3 / sticking  coeff  water )
+!      ! 0.9 is ( molecular weight NH3 / molecular weight water )
+!      REAL*8, PARAMETER :: CONV_NH3  = 5.69209978831d-1
+      ! CONV_H2O2 = 0.6 * SQRT( 0.53 ), used for the ice to gas ratio for
+      ! H2O2
       ! 0.6 is ( sticking  coeff H2O2  / sticking  coeff  water )
-      ! 1.9 is ( molecular weight H2O2 / molecular weight water )
-      REAL*8, PARAMETER :: CONV_H2O2 = 8.27042925126d-1
-
-      ! CONV_NH3 = 0.6 * SQRT( 0.9 ), used for the ice to gas ratio for NH3
+      ! 0.53 is ( molecular weight water / molecular weight H2O2 )
+      REAL*8, PARAMETER    :: CONV_H2O2 = 4.36564d-1     
+ 
+      ! CONV_NH3 = 0.6 * SQRT( 1.06 ), used for the ice to gas ratio for
+      ! NH3
       ! 0.6 is ( sticking  coeff  NH3 / sticking  coeff  water )
-      ! 0.9 is ( molecular weight NH3 / molecular weight water )
-      REAL*8, PARAMETER :: CONV_NH3  = 5.69209978831d-1
+      ! 1.06 is ( molecular weight water /  molecular weight NH3 )
+      REAL*8, PARAMETER    :: CONV_NH3  = 6.17395d-1
 
       REAL*8,    SAVE     :: POP_HSTAR, POP_DEL_H, POP_DEL_Hw
       REAL*8              :: DUM

@@ -167,6 +167,20 @@ MODULE Olson_LandMap_Mod
   REAL*4,  ALLOCATABLE :: lat  (  :  )  ! Lat centers, Olson grid [degrees]
   INTEGER, ALLOCATABLE :: OLSON(:,:,:)  ! Olson land types
   REAL*4,  ALLOCATABLE :: A_CM2(:,:,:)  ! Surface areas [cm2]
+!
+! !DEFINED PARAMETERS:
+!
+! The following parameters are used to skip over Olson NATIVE GRID boxes
+! that are too far away from the GEOS-CHEM GRID BOX.  This can speed up
+! the Olson computation by a factor of 100 or more!
+!
+#if defined( GRID05x0666 ) || defined( GRID025x03125 )
+    REAL*8, PARAMETER :: latThresh = 1d0   ! Lat threshold, nested grid
+    REAL*8, PARAMETER :: lonThresh = 1d0   ! Lon threshold, nested grid
+#else
+    REAL*8, PARAMETER :: latThresh = 5d0   ! Lat threshold, global
+    REAL*8, PARAMETER :: lonThresh = 6d0   ! Lon threshold, global
+#endif
 
 CONTAINS
 !EOC
@@ -336,91 +350,121 @@ CONTAINS
        C         = 0
 
        !===================================================================
-       ! Find each 0.5 x 0.5 NATIVE GRID BOX that fits into the GEOS-CHEM
-       ! GRID BOX.  Keep track of the land types and coverage fractions.
-       !===================================================================
-       DO JJ  = 1, J_OLSON
-       DO III = 1, I_OLSON
+       ! Find each NATIVE GRID BOX that fits into the GEOS-CHEM GRID BOX.  
+       ! Keep track of the land types and coverage fractions.
+       !=================================================================== 
+ 
+       ! Loop over latitudes on the NATIVE GRID
+       DO JJ  = 1, J_OLSON 
 
-          ! Initialize
-          dxdy       = 0e0
-          mapWt      = 0e0
-       
-          ! Find the NATIVE GRID longitude index for use below.  Account for 
-          ! the first GEOS-CHEM GRID box, which straddles the date line.
-          IF ( isGlobal .and.  IG == 1 ) THEN
-             II      = shiftLon(III)
-          ELSE
-             II      = indLon(III)
-          ENDIF
-          
-          ! Edges of this NATIVE GRID box
-          xedge_w    = lonedge(II  )                ! W edge
+          ! Latitude edges of this NATIVE GRID box
           yedge_s    = latedge(JJ  )                ! S edge
-          xedge_e    = lonedge(II+1)                ! E edge
           yedge_n    = latedge(JJ+1)                ! N edge
 
-          ! Because the first GEOS-CHEM GRID BOX straddles the date line,
-          ! we have to adjust the W and E edges of the NATIVE GRID BOX to
-          ! be in monotonically increasing order.  This will prevent
-          ! erronous results from being returned by GET_MAP_WT below.
-          IF ( isGlobal .and. IG == 1 .and. II >= shiftLon(1) )  THEN
-             xedge_w = xedge_w - 360e0
-             xedge_e = xedge_e - 360e0
-          ENDIF
-         
-          ! "Area" of the GEOS-CHEM GRID BOX in degrees (DLON * DLAT)
-          dxdy       = ( xedge_e - xedge_w ) * ( yedge_n - yedge_s )
+          !%%%%%% LATITUDE SHUNT TO REDUCE WALL TIME (bmy, 3/20/14) %%%%%%%%%%
+          !%%%
+          !%%% Skip further computations unless we are within LATTHRESH 
+          !%%% degrees of the western edge of box (I,J).  This prevents 
+          !%%% excess computations and subroutine calls.
+          !%%%
+          IF ( ABS( yedge_s - yedgeC_s ) > latThresh ) CYCLE
+          !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-          ! Get the mapping weight (i.e. The fraction of the NATIVE 
-          ! GRID BOX that lies w/in the GEOS-CHEM GRID BOX)
-          CALL GET_MAP_WT( xedge_w, xedge_e, xedgeC_w, xedgeC_e,  &
-                           yedge_s, yedge_n, yedgeC_s, yedgeC_n,  &
-                           mapWt                                 )
+          ! Loop over longitudes on the NATIVE GRID
+          DO III = 1, I_OLSON
 
-          ! Skip unless part (or all) of the NATIVE GRID BOX
-          ! actually fits into the GEOS-CHEM GRID BOX
-          IF ( mapWt <= 0e0 .or. mapWt > 1e0 ) CYCLE
+             ! Initialize
+             dxdy       = 0e0
+             mapWt      = 0e0
+             
+             ! Find the NATIVE GRID longitude index for use below.  Account for 
+             ! the first GEOS-CHEM GRID box, which straddles the date line.
+             IF ( isGlobal .and.  IG == 1 ) THEN
+                II      = shiftLon(III)
+             ELSE
+                II      = indLon(III)
+             ENDIF
+             
+             ! Edges of this NATIVE GRID box
+             xedge_w    = lonedge(II  )                ! W edge
+             xedge_e    = lonedge(II+1)                ! E edge
 
-          ! Area of the NATIVE GRID BOX that lies w/in the GEOS-CHEM GRID BOX
-          area              = A_CM2(II,JJ,1) * mapWt
-           
-          ! Keep a total of the area
-          sumArea           = sumArea + area
+             ! Because the first GEOS-CHEM GRID BOX straddles the date line,
+             ! we have to adjust the W and E edges of the NATIVE GRID BOX to
+             ! be in monotonically increasing order.  This will prevent
+             ! erronous results from being returned by GET_MAP_WT below.
+             IF ( isGlobal .and. IG == 1 .and. II >= shiftLon(1) )  THEN
+                xedge_w = xedge_w - 360e0
+                xedge_e = xedge_e - 360e0
+             ENDIF
+        
+             !%%%%%% LONGITUDE SHUNT TO REDUCE WALL TIME (bmy, 3/20/14) %%%%%%
+             !%%%
+             !%%% Skip further computations unless we are within LONTHRESH 
+             !%%% degrees of the western edge of box (I,J).  This prevents 
+             !%%% excess computations and subroutine calls.
+             !%%%
+             IF ( ABS( xedge_w - xedgeC_w ) > lonThresh ) CYCLE
+             !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-          ! Olson land map type on the NATIVE GRID
-          type              = OLSON(II,JJ,1)
-           
-          ! Increment count of Olson types
-          ctOlson(I,J,type) = ctOlson(I,J,type) + 1
+             ! "Area" of the GEOS-CHEM GRID BOX in degrees (DLON * DLAT)
+             dxdy       = ( xedge_e - xedge_w ) * ( yedge_n - yedge_s ) 
 
-          ! Add area covered by this olson type
-          frOlson(I,J,type) = frOlson(I,J,type) + area
+             ! Get the mapping weight (i.e. The fraction of the NATIVE 
+             ! GRID BOX that lies w/in the GEOS-CHEM GRID BOX)
+             CALL GET_MAP_WT( xedge_w, xedge_e, xedgeC_w, xedgeC_e,  &
+                              yedge_s, yedge_n, yedgeC_s, yedgeC_n,  &
+                              mapWt                                 )
 
-          ! Preserve ordering for backwards-compatibility w/ LAI data
-          IF ( ordOlson(I,J,type) < 0 ) THEN 
-
-             ! Counter of land types we have encountered for the first time
-             uniqOlson          = uniqOlson + 1
-
-             ! Record the order in which this land type was first encountered
-             ordOlson(I,J,type) = uniqOlson
-
-          ENDIF
-
-          ! Save mapping information for later use in modis_lai_mod.F90
-          ! in order to prepare the State_Met%XLAI array for use with the 
-          ! legacy dry-deposition and soil NOx emissions codes.
-          C                     = C + 1
-          mapping(I,J)%count    = C
-          mapping(I,J)%II(C)    = II
-          mapping(I,J)%JJ(C)    = JJ
-          mapping(I,J)%olson(C) = type
-          mapping(I,J)%area(C)  = area
-          mapping(I,J)%sumarea  = sumarea
-
+             ! Get the mapping weight (i.e. The fraction of the NATIVE 
+             ! GRID BOX that lies w/in the GEOS-CHEM GRID BOX)
+             CALL GET_MAP_WT( xedge_w, xedge_e, xedgeC_w, xedgeC_e,  &
+                              yedge_s, yedge_n, yedgeC_s, yedgeC_n,  &
+                              mapWt                                 )
+   
+             ! Skip unless part (or all) of the NATIVE GRID BOX
+             ! actually fits into the GEOS-CHEM GRID BOX
+             IF ( mapWt <= 0e0 .or. mapWt > 1e0 ) CYCLE
+   
+             ! Area of the NATIVE GRID BOX that lies w/in the GEOS-CHEM GRID BOX
+             area              = A_CM2(II,JJ,1) * mapWt
+              
+             ! Keep a total of the area
+             sumArea           = sumArea + area
+   
+             ! Olson land map type on the NATIVE GRID
+             type              = OLSON(II,JJ,1)
+              
+             ! Increment count of Olson types
+             ctOlson(I,J,type) = ctOlson(I,J,type) + 1
+   
+             ! Add area covered by this olson type
+             frOlson(I,J,type) = frOlson(I,J,type) + area
+   
+             ! Preserve ordering for backwards-compatibility w/ LAI data
+             IF ( ordOlson(I,J,type) < 0 ) THEN 
+   
+                ! Counter of land types we have encountered for the first time
+                uniqOlson          = uniqOlson + 1
+   
+                ! Record the order in which this land type was first encountered
+                ordOlson(I,J,type) = uniqOlson
+   
+             ENDIF
+   
+             ! Save mapping information for later use in modis_lai_mod.F90
+             ! in order to prepare the State_Met%XLAI array for use with the 
+             ! legacy dry-deposition and soil NOx emissions codes.
+             C                     = C + 1
+             mapping(I,J)%count    = C
+             mapping(I,J)%II(C)    = II
+             mapping(I,J)%JJ(C)    = JJ
+             mapping(I,J)%olson(C) = type
+             mapping(I,J)%area(C)  = area
+             mapping(I,J)%sumarea  = sumarea
+   
+          ENDDO
        ENDDO
-    ENDDO
 
        !===================================================================
        ! Construct GEOS-Chem type output arrays from the binning that we 

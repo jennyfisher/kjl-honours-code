@@ -199,6 +199,7 @@
 !  25 Mar 2013 - R. Yantosca - Now accept am_I_Root, Input_Opt, State_Chm, RC
 !  13 Aug 2013 - M. Sulprizio- Add NAP and POA biomass burning emissions for 
 !                              SOA + semivolatile POA (H. Pye)
+!  27 Feb 2015 - J. Fisher   - Add methanol
 !******************************************************************************
 !
       ! References to F90 modules
@@ -215,10 +216,12 @@
       USE GIGC_Input_Opt_Mod, ONLY : OptInput
       USE GIGC_State_Chm_Mod, ONLY : ChmState
       USE TIME_MOD,           ONLY : ITS_A_NEW_MONTH
+      USE TRACER_MOD,         ONLY : TRACER_MW_KG
       USE TRACERID_MOD,       ONLY : IDTBCPO, IDTNH3, IDTOCPO, IDTSO2
       USE TRACERID_MOD,       ONLY : IDBBC, IDBNH3, IDBOC, IDBSO2
       USE TRACERID_MOD,       ONLY : IDBCO, IDBNO
       USE TRACERID_MOD,       ONLY : IDBCO2
+      USE TRACERID_MOD,       ONLY : IDBMOH, IDTMOH, IDTCO
       USE TRACERID_MOD,       ONLY : IDBXYLE, IDBTOLU, IDBBENZ ! hotp for debug
       ! SOAupdate: POA  (hotp 10/11/09)
       USE TRACERID_MOD,       ONLY : IDTPOA1
@@ -490,6 +493,15 @@
      &        CALL TOTAL_BIOMASS_TG( BIOMASS(:,:,IDBNAP ) * 2592000d0,
      &                                12d-3, 'NAP ' )
 
+         ! Methanol emissions
+         ! Based on MOH offline simulation from KCW/DBM, the ratio of
+         ! methanol emitted to CO emitted from biomass burning is 2%
+         ! kgMOH/kgCO as compiled by Andreae and Merlet, 2001.
+         ! BIOMASS is in molec/cm2/s, so multiply by ratio of MW
+         IF ( IDBMOH > 0 )
+     &      BIOMASS(:,:,IDBMOH) = BIOMASS(:,:,IDBCO) * 2d-2 *
+     &                            TRACER_MW_KG(IDTCO) /
+     &                            TRACER_MW_KG(IDTMOH)
       
          !==============================================================
          ! Do the following on every timestep:
@@ -572,6 +584,7 @@
       USE TRACERID_MOD, ONLY : IDBC2H2, IDBGLYC, IDBHAC
       ! SOAupdate: Add NAP emissions (hotp 8/23/09)
       USE TRACERID_MOD, ONLY : IDBNAP
+      USE TRACERID_MOD, ONLY : IDBMOH
 
       USE TRACERID_MOD, ONLY : IDTNO,   IDTCO,   IDTALK4, IDTACET 
       USE TRACERID_MOD, ONLY : IDTMEK,  IDTALD2, IDTPRPE, IDTC3H8
@@ -583,6 +596,7 @@
       USE TRACERID_MOD, ONLY : IDTC2H2, IDTC2H4
       ! SOAupdate: Add NAP emissions (hotp 8/23/09)
       USE TRACERID_MOD, ONLY : IDTNAP,  IDTPOA1
+      USE TRACERID_MOD, ONLY : IDTMOH
 
       USE TRACER_MOD,   ONLY : ITS_A_CH4_SIM ! (mpayer, 2/14/12)
 
@@ -626,6 +640,7 @@
       IF ( IDBHAC   /= 0 ) NBIOTRCE = NBIOTRCE + 1 
       ! SOAupdate: Add NAP (hotp 8/23/09)
       IF ( IDBNAP   /= 0 ) NBIOTRCE = NBIOTRCE + 1
+      IF ( IDBMOH   /= 0 ) NBIOTRCE = NBIOTRCE + 1
 
       ! Fill BIOTRCE w/ appropriate TRACER ID #'s
       ! Replaced NOx with NO (mpayer, 3/14/13)
@@ -664,6 +679,7 @@
       IF ( IDBHAC   /= 0 ) BIOTRCE(IDBHAC)  = IDTHAC      
       ! SOAupdate: Add NAP (hotp 8/23/09)
       IF ( IDBNAP   /= 0 ) BIOTRCE(IDBNAP)  = IDTNAP
+      IF ( IDBMOH   /= 0 ) BIOTRCE(IDBMOH)  = IDTMOH
 
       ! Set T/F of BIOBGAS() (hotp 8/3/09)
       ! BIOBGAS(IDBxx) is true if IDBxx should be handled by
@@ -702,6 +718,7 @@
       IF ( IDBC2H2  /= 0 ) BIOBGAS(IDBC2H2) = .TRUE.
       IF ( IDBGLYC  /= 0 ) BIOBGAS(IDBGLYC) = .TRUE.
       IF ( IDBHAC   /= 0 ) BIOBGAS(IDBHAC ) = .TRUE.
+      IF ( IDBMOH   /= 0 ) BIOBGAS(IDBMOH ) = .TRUE.
 
 
       !FP_ISOP

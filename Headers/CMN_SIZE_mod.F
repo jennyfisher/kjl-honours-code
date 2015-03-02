@@ -514,7 +514,8 @@
       ! increase NBIOMAX to 24 for dicarbonyls (ccc, 2/02/10)
       ! increase NBIOMAX to 25 fpr CH4 (kjw)
       ! SOAupdate: add 1 for naphthalene, now 26 (hotp 7/21/10)
-      INTEGER, PARAMETER :: NBIOMAX = 26
+      ! +1 for MOH
+      INTEGER, PARAMETER :: NBIOMAX = 27
 
 #if   defined( TOMAS )
       INTEGER, PARAMETER :: TOMASSPEC = 8

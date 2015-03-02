@@ -86,6 +86,7 @@
 !  13 Aug 2013 - M. Sulprizio- Add modifications for updated SOA and SOA +
 !                              semivolatile POA simulations (H. Pye)
 !  20 Aug 2013 - R. Yantosca - Removed "define.h", this is now obsolete
+!  27 Feb 2015 - J. Fisher   - Add MOH biomass & biogenic emissions
 !EOP
 !------------------------------------------------------------------------------
 !BOC
@@ -5142,11 +5143,12 @@
             ! Bug fix: omit SOA tracers if not needed. (bmy, 9/2/10)
             !NTRAC(28) = 23
             !-----------------------------------------------------------------
+            ! plus one for MOH -- and missing for HAC, GLYC before
             IF ( Input_Opt%LSOA ) THEN
                ! SOAupdate: plus one for NAP (hotp 7/25/10)
-               NTRAC(28) = 24   ! Traditional SOA simulation
+               NTRAC(28) = 25   ! Traditional SOA simulation
             ELSE
-               NTRAC(28) = 14   ! Standard simulation
+               NTRAC(28) = 17   ! Standard simulation
             ENDIF
 
             ! Loop over tracers
@@ -5327,6 +5329,13 @@
                      MWT  (T,28) = 12e-3
                      MOLC (T,28) = 1
                      UNIT (T,28) = 'atoms C/cm2/s' 
+
+               ELSE IF ( T == IDBMOH ) THEN
+                  NAME (T,28) = 'MOH'
+                  INDEX(T,28) = IDTMOH + ( SPACING * 45 )
+                  MWT  (T,28) = 32e-3
+                  MOLC (T,28) = 1
+                  UNIT (T,28) = 'molec/cm2/s'
 
                ENDIF
 

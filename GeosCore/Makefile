@@ -895,6 +895,9 @@ merra_cn_mod.o              : merra_cn_mod.F                                 \
 
 merra_i6_mod.o              : merra_i6_mod.F
 
+methanol_mod.o              : methanol_mod.F                                 \
+                              dao_mod.o               diag_mod.o
+
 MIESCT.o                    : MIESCT.F
 
 modis_lai_mod.o             : modis_lai_mod.F90                              \

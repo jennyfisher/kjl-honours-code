@@ -590,7 +590,6 @@
       !=================================================================
       !  GET_MOH_OCN_PARAMS begins here!
       !=================================================================
-
       !-------------------------------------------------------
       ! Compute H
       !-------------------------------------------------------
@@ -618,7 +617,7 @@
       ! Magnitude of surface wind [m/s]
       ! SFCWINDSQR(I,J) is needed since this will compute the 
       ! square of the surface wind correctly for all GEOS models 
-      U     = SQRT( SFCWINDSQR( I, J ) )
+      U     = SQRT( SFCWINDSQR( I, J, State_Met%U10M, State_Met%V10M ) )
 
       ! TC is temperature in Celsius
       TC    = State_Met%TS(I,J) - 273.15d0

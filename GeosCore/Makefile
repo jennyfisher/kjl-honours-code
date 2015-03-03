@@ -613,7 +613,7 @@ emissdr.o                   : emissdr.F                                      \
 			      lightning_nox_mod.o     megan_mod.o            \
                               meganut_mod.o           modis_lai_mod.o        \
                               rcp_mod.o               soil_nox_mod.o         \
-                              tracerid_mod.o
+                              tracerid_mod.o          methanol_mod.o
 
 emissions_mod.o             : emissions_mod.F                                \
                               arctas_ship_emiss_mod.o biomass_mod.o          \

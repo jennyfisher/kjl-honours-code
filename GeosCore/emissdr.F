@@ -105,6 +105,7 @@
 !
       ! References to F90 modules
       USE ACETONE_MOD,        ONLY : EMISS_BIOACET, OCEAN_SOURCE_ACET
+      USE METHANOL_MOD,       ONLY : OCEAN_SOURCE_METHANOL
       USE AEIC_MOD,           ONLY : EMIT_AEIC
       USE BIOFUEL_MOD,        ONLY : BIOFUEL_BURN
       USE BROMOCARB_MOD,      ONLY : EMIS_CHBr3, EMIS_CH2Br2
@@ -184,6 +185,7 @@
       REAL*8                 :: TOTALPULSE
       REAL*8                 :: SOILFRT
       REAL*8                 :: DEP_FERT, TEMP_FERT
+      REAL*8                 :: OCN_MOH
 
       ! Add biogenic emission scale factor for ethene (tmf, 1/13/06)
       REAL*8                 :: BIOSCALEC2H4
@@ -418,6 +420,7 @@
 
             ! Zero biogenic acetone (bmy, 9/14/01)
             BIO_ACET  = 0d0
+            OCN_MOH   = 0d0
 
             ! Use function GET_LOCALTIME to get the local time at lon I
             ! Middle of time step is between 10pm-2am when IHOUR = 1
@@ -659,21 +662,26 @@
                   ENDIF
                ENDIF
 
-               !==============================================================
-               ! save biogenic methanol emission for later use
-               ! EMISRR has units [atoms C/box/s] 
-               !==============================================================
-               IF ( IDTMOH /= 0 ) THEN
+            !==============================================================
+            ! save biogenic methanol emission for later use
+            ! EMISRR has units [atoms C/box/s] 
+            !==============================================================
+            IF ( IDTMOH /= 0 ) THEN
 
-                  ! NOTE: Don't save into EMISRR for the tagged CO 
-                  IF ( NO_TAGCO ) THEN
-                     EMISRR(I,J,IDEMOH) = EMISRR(I,J,IDEMOH) + 
-     &                                    ( EMMOH / DTSRCE )
-                  ENDIF
+               ! Ocean source [molec/box/s]
+               CALL OCEAN_SOURCE_METHANOL(I, J, OCN_MOH, State_Met )
 
-                  ! Save direct emissions in ND64 (molec/cm2/s)
-                  IF ( ND64 > 0 ) AD64(I,J,1,4) = AD64(I,J,1,4) + EMMOH
+               ! NOTE: Don't save into EMISRR for the tagged CO 
+               IF ( NO_TAGCO ) THEN
+                  EMISRR(I,J,IDEMOH) = EMISRR(I,J,IDEMOH) + 
+     &                                 ( EMMOH / DTSRCE ) +
+     &                                 OCN_MOH
                ENDIF
+
+               ! Save direct emissions in ND64 (molec/cm2/s)
+               IF ( ND64 > 0 ) AD64(I,J,1,4) = AD64(I,J,1,4) + 
+     &                         ( EMMOH / AREA_CM2 / DTSRCE )
+            ENDIF
 
             !=================================================================
             ! save biogenic monoterpene emission for later use

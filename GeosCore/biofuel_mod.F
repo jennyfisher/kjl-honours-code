@@ -95,6 +95,7 @@
 !  13 Aug 2013 - M. Sulprizio- Add NAP biofuel emissions for SOA + semivolatile
 !                              POA simulation (H. Pye)
 !  20 Aug 2013 - R. Yantosca - Removed "define.h", this is now obsolete
+!  03 Mar 2015 - J. Fisher   - Add MOH following example of HAC
 !******************************************************************************
 !
       IMPLICIT NONE
@@ -124,7 +125,8 @@
       !=================================================================
 
       ! SOAupdate: increase NBFMAX for NAP (hotp 6/25/09)
-      INTEGER, PARAMETER          :: NBFMAX = 20
+      ! +1 for MOH
+      INTEGER, PARAMETER          :: NBFMAX = 21
 
       INTEGER                     :: NBFTRACE
       INTEGER                     :: BFTRACE(NBFMAX) 
@@ -260,11 +262,12 @@
       USE TRACERID_MOD,         ONLY : IDTTOLU, IDTXYLE, IDTC2H4
       USE TRACERID_MOD,         ONLY : IDTC2H2, IDTGLYC, IDTHAC
       USE TRACERID_MOD,         ONLY : IDTNO2,  IDTNH3,  IDTSO2
-      USE TRACERID_MOD,         ONLY : IDTBCPO, IDTOCPO
+      USE TRACERID_MOD,         ONLY : IDTBCPO, IDTOCPO, IDTMOH
       USE TRANSFER_MOD,         ONLY : TRANSFER_2D
       USE TRACERID_MOD,         ONLY : IDBFBENZ,IDBFTOLU,IDBFXYLE
       USE TRACERID_MOD,         ONLY : IDBFGLYX,IDBFMGLY,IDBFC2H4
       USE TRACERID_MOD,         ONLY : IDBFC2H2,IDBFGLYC,IDBFHAC
+      USE TRACERID_MOD,         ONLY : IDBFMOH
 ![eml 
       USE TIME_MOD,             ONLY : GET_HISTYR
       USE REGRID_A2A_MOD,       ONLY : DO_REGRID_A2A
@@ -404,6 +407,7 @@
          !      GLYC      18                   [kg     /box/year]
          !      HAC       19                   [kg     /box/year]
          !      NAP       20                   [kg C   /box/year]
+         !      MOH       21                   [kg     /box/year]
          !
          ! These emissions are converted to [molec/cm3/s] (or 
          ! [molec C/cm3/s] for hydrocarbons), since the chemistry
@@ -950,6 +954,19 @@
                ! Define MOLWT for use below
                MOLWT(N) = 12d-3
 
+            ELSE IF ( NN == IDTMOH  ) THEN
+
+               !----------------
+               ! Biofuel MOH
+               !----------------
+
+               ! Scale to CO at the end to take into account all overwrites
+               ! and zeroing
+               BIOFUEL_KG(N,:,:) = 0d0
+
+               ! Define MOLWT for use below
+               MOLWT(N) = 32d-3
+
             ENDIF
          ENDDO
 
@@ -1286,6 +1303,11 @@
       ENDDO ! J
 !$OMP END PARALLEL DO
 
+      ! Scale methanol to CO biofuel emissions, taking into account all
+      ! overwrites and zeroing. Emission ratio is 0.02 kg CO / kg MOH
+      IF (IDBFMOH > 0) BIOFUEL(IDBFMOH,:,:) = BIOFUEL(IDBFCO,:,:) *
+     &                    2d-2 * MOLWT(IDBFCO) / MOLWT(IDBFMOH)
+
       ! Save diagnostic information (biofuel burning emissions) (hotp 11/23/09)
       ! ND34 -- archive biofuel burning species [molec/cm2/s] or
       ! [molecC/cm2/s] for species transported as carbon
@@ -1514,10 +1536,10 @@
 
       USE TRACERID_MOD, ONLY : IDBFGLYX, IDBFMGLY, IDBFBENZ, IDBFTOLU
       USE TRACERID_MOD, ONLY : IDBFXYLE, IDBFC2H4, IDBFC2H2, IDBFGLYC
-      USE TRACERID_MOD, ONLY : IDBFHAC
+      USE TRACERID_MOD, ONLY : IDBFHAC,  IDBFMOH
       USE TRACERID_MOD, ONLY : IDTGLYX,  IDTMGLY,  IDTBENZ,  IDTTOLU
       USE TRACERID_MOD, ONLY : IDTXYLE,  IDTC2H4,  IDTC2H2,  IDTGLYC
-      USE TRACERID_MOD, ONLY : IDTHAC
+      USE TRACERID_MOD, ONLY : IDTHAC,   IDTMOH
       ! SOAupdate: for gas phase NAP chemistry, NAP biofuel emis (hotp 6/24/09)
       USE TRACERID_MOD, ONLY : IDTNAP
       USE TRACERID_MOD, ONLY : IDBFNAP
@@ -1552,6 +1574,7 @@
       IF ( IDBFC2H2 /= 0 ) NBFTRACE = NBFTRACE + 1 
       IF ( IDBFGLYC /= 0 ) NBFTRACE = NBFTRACE + 1 
       IF ( IDBFHAC  /= 0 ) NBFTRACE = NBFTRACE + 1 
+      IF ( IDBFMOH  /= 0 ) NBFTRACE = NBFTRACE + 1 
       ! SOAupdate: for gas phase NAP chemistry, NAP bf emiss (hotp 6/24/09)
       IF ( IDBFNAP  /= 0 ) NBFTRACE = NBFTRACE + 1
 
@@ -1578,6 +1601,7 @@
       IF ( IDBFHAC  /= 0 ) BFTRACE(IDBFHAC ) = IDTHAC
       ! SOAupdate: for gas phase NAP chemistry, NAP bf emiss (hotp 6/24/09)
       IF ( IDBFNAP  /= 0 ) BFTRACE(IDBFNAP ) = IDTNAP
+      IF ( IDBFMOH  /= 0 ) BFTRACE(IDBFMOH ) = IDTMOH
 
       ! Echo biofuel tracer information
       IF ( am_I_Root ) THEN

@@ -190,6 +190,7 @@
 !  20 Aug 2013 - R. Yantosca - Removed "define.h", this is now obsolete
 !  29 Jan 2014 - R. Yantosca - Now set MAXDEP=105 for all simulations.  For
 !                              TOMAS we had MAXDEP=100; this is close enough.
+!  03 Mar 2015 - J. Fisher   - Add methanol dry deposition
 !EOP
 !------------------------------------------------------------------------------
 !BOC
@@ -197,7 +198,8 @@
 ! !DEFINED PARAMETERS:
 !
       ! SOAupdate: 55 to 105 jje (8/19/2010)
-      INTEGER, PARAMETER :: MAXDEP    = 105     ! Max # of depositing species
+      ! +1 for MOH
+      INTEGER, PARAMETER :: MAXDEP    = 106     ! Max # of depositing species
       REAL*8,  PARAMETER :: XCKMAN    = 0.4d0   ! Von Karman's constant
       INTEGER, PARAMETER :: NR_MAX    = 200     ! # of seasalt bins 
       INTEGER, PARAMETER :: NDRYDTYPE = 11      ! # of drydep land types
@@ -515,6 +517,11 @@
                ENDIF
 
             ENDIF
+
+            ! For MOH, we need to only do drydep over the land
+            ! and and sea ice, but not over the oceans. (jaf, 6/11/13)
+            IF ( (NN == IDTMOH) .and. (State_Met%FRCLND(I,J) < 0.5d0)
+     &           .and. (State_Met%ALBD(I,J) <= 0.4) ) DVZ = 0d0
 
             ! Set Vd for aerosol tracers over snow/ice (J. Fisher, 8/1/11)
             IF ( ( AIROSOL(N)    ) .and. ( LSNOW(IJLOOP) )  .and. 
@@ -4931,6 +4938,17 @@
             XMW(NUMDEP)     = 44d-3
             AIROSOL(NUMDEP) = .FALSE.
 
+         ! MOH (jaf, 6/10/13) - uses same dep vel as HNO3
+         ELSE IF ( N == IDTMOH ) THEN 
+            NUMDEP          = NUMDEP + 1
+            NTRAIND(NUMDEP) = IDTMOH
+            NDVZIND(NUMDEP) = NUMDEP
+            DEPNAME(NUMDEP) = 'MOH'
+            HSTAR(NUMDEP)   = 220d0
+            !kcw, changing to f=1 for Karl et al. reactive uptake
+            F0(NUMDEP)      = 1.0d0
+            XMW(NUMDEP)     = 32d-3
+            AIROSOL(NUMDEP) = .FALSE. 
 
          !----------------------------------
          ! Sulfur & Nitrate aerosol tracers

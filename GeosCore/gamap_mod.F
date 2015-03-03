@@ -6676,7 +6676,7 @@
       IF ( ND64 > 0 ) THEN
 
          ! Number of tracers
-         NTRAC(64) = 6
+         NTRAC(64) = 7
 
          ! Loop over tracers
          DO T = 1, NTRAC(64)
@@ -6697,15 +6697,18 @@
                   NAME (T,64) = 'MOHbb'
                   FNAME(T,64) = 'MOH from biomass burning'
                CASE( 3 )
+                  NAME (T,64) = 'MOHbf'
+                  FNAME(T,64) = 'MOH from biofuel emissions'
+               CASE( 4 )
                   NAME (T,64) = 'MOHbg'
                   FNAME(T,64) = 'MOH from biogenic emissions'
-               CASE( 4 )
+               CASE( 5 )
                   NAME (T,64) = 'MOHop'
                   FNAME(T,64) = 'MOH from ocean source'
-               CASE( 5 )
+               CASE( 6 )
                   NAME (T,64) = 'MOHol'
                   FNAME(T,64) = 'MOH from ocean sink'
-               CASE( 6 )
+               CASE( 7 )
                   NAME (T,64) = 'MOHcl'
                   FNAME(T,64) = 'MOH from cloud uptake'
                   UNIT (T,64) = 'molec/cm3/s'

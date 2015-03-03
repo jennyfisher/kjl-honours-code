@@ -137,7 +137,7 @@
 #endif
       INTEGER, PARAMETER :: PD62=NNPAR        
       INTEGER, PARAMETER :: PD63=0           
-      INTEGER, PARAMETER :: PD64=6        ! New for MOH
+      INTEGER, PARAMETER :: PD64=7        ! New for MOH
       INTEGER            :: PD65
       INTEGER, PARAMETER :: PD66=6           
       INTEGER, PARAMETER :: PD67=23 ! (Lin, 31/03/09)

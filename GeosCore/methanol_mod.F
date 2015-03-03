@@ -242,7 +242,7 @@
       !=================================================================
       ! kg/box/timestep * (molec/kg) * (1/s) * (1/cm2)
       IF ( ND64 > 0 ) 
-     &     AD64(I,J,1,4) = AD64(I,J,1,4) + ( OCEAN_MOH * XNUMOL_MOH ) /
+     &     AD64(I,J,1,5) = AD64(I,J,1,5) + ( OCEAN_MOH * XNUMOL_MOH ) /
      &                                     ( AREA_CM2  * DTSRCE   )
 
       END SUBROUTINE OCEAN_SOURCE_METHANOL
@@ -346,8 +346,8 @@
          !===========================================================
          ! Diagnostics: save METHANOL lost to ocean in [molec/cm2/s]
          !===========================================================
-            IF ( ND64 > 0 ) AD64(I,J,1,5) = 
-     &           AD64(I,J,1, 5) + OCEAN_MOH * XNUMOL_MOH /
+            IF ( ND64 > 0 ) AD64(I,J,1,6) = 
+     &           AD64(I,J,1, 6) + OCEAN_MOH * XNUMOL_MOH /
      &                           ( AREA_CM2 * DTCHEM )
       ENDDO
       ENDDO
@@ -527,8 +527,8 @@
          !===========================================================
          ! Diagnostics: save METHANOL cloud sink in [molec/cm3/s]
          !===========================================================
-            IF ( ND64 > 0 .and. L <= LD64 ) AD64(I,J,L,6) = 
-     &           AD64(I,J,L,6) + CLOUD_MOH * XNUMOL_MOH / (DTCHEM *
+            IF ( ND64 > 0 .and. L <= LD64 ) AD64(I,J,L,7) = 
+     &           AD64(I,J,L,7) + CLOUD_MOH * XNUMOL_MOH / (DTCHEM *
      &           AREA_CM2 * State_Met%BXHEIGHT(I,J,L) * 100d0 )
       ENDDO
       ENDDO

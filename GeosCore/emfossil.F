@@ -19,7 +19,7 @@
       USE BRAVO_MOD,          ONLY : GET_BRAVO_ANTHRO, GET_BRAVO_MASK
       USE CAC_ANTHRO_MOD,     ONLY : GET_CANADA_MASK,  GET_CAC_ANTHRO
       !USE DAO_MOD,            ONLY : IS_WATER
-      USE DIAG_MOD,           ONLY : AD29,   AD32_an,  AD36
+      USE DIAG_MOD,           ONLY : AD29,   AD32_an,  AD36, AD64
       USE EDGAR_MOD,          ONLY : GET_EDGAR_CO,     GET_EDGAR_NOx
       USE EDGAR_MOD,          ONLY : GET_EDGAR_TODN
       USE EMEP_MOD,           ONLY : GET_EMEP_ANTHRO,  GET_EUROPE_MASK
@@ -1064,6 +1064,13 @@
             AD36(I,J,N) = AD36(I,J,N) + 
      &           ( EMX(1) * XNUMOL(NN) / AREA_CM2 ) 
          ENDIF    
+
+         ! ND64 = MOH source diagnostic... 
+         ! store as [molec/cm2/s] in AD64(:,:,1)
+         IF ( ND64 > 0 .and. NN == IDTMOH ) THEN
+            AD64(I,J,1,1) = AD64(I,J,1,1) +
+     &           ( EMX(1) * XNUMOL(NN) / ( DTSRCE * AREA_CM2 ) ) 
+         ENDIF
 
       ENDIF
 

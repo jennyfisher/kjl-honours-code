@@ -245,7 +245,7 @@
       ! References to F90 modules
       USE BPCH2_MOD,            ONLY : GET_NAME_EXT_2D,  GET_RES_EXT
       USE BPCH2_MOD,            ONLY : GET_TAU0,         READ_BPCH2
-      USE DIAG_MOD,             ONLY : AD29,    AD32_bf, AD34
+      USE DIAG_MOD,             ONLY : AD29,    AD32_bf, AD34, AD64
       USE DIRECTORY_MOD,        ONLY : DATA_DIR,         DATA_DIR_1x1
       USE EPA_NEI_MOD,          ONLY : GET_EPA_BIOFUEL,  GET_USA_MASK
       USE GIGC_ErrCode_Mod
@@ -309,6 +309,7 @@
       LOGICAL                       :: WEEKDAY
       LOGICAL, SAVE                 :: FIRST = .TRUE.
       LOGICAL, SAVE                 :: DO_ND29, DO_ND32, DO_ND34
+      LOGICAL, SAVE                 :: DO_ND64
       INTEGER                       :: AS, I, J, N, NN, DOW_LT
       INTEGER                       :: SIM_YEAR
       REAL*4                        :: ARRAY(IIPAR,JJPAR,1)
@@ -377,6 +378,7 @@
          DO_ND29 = ( ND29 > 0 .and. IDBFCO  /= 0 ) 
          DO_ND32 = ( ND32 > 0 .and. IDBFNO /= 0  ) 
          DO_ND34 = ( ND34 > 0                    ) 
+         DO_ND64 = ( ND64 > 0 .and. IDBFMOH /= 0 ) 
 
          ! Fancy output..
          WRITE( 6, '(a)'   ) REPEAT( '=', 79 )
@@ -1326,7 +1328,13 @@
                ! ND34 -- archive biofuel burning species [molec/cm2/s]
                AD34(I,J,N) = AD34(I,J,N) + ( BIOFUEL(N,I,J) * 
      &                                       BXHEIGHT_CM )
+
             ENDDO ! NBFTRACE
+
+            ! ND64 -- MOH source diagnostics [molec/cm2/s]
+            IF ( DO_ND64 .and. IDBFMOH > 0 )
+     &          AD64(I,J,1,3) = AD64(I,J,1,3) + ( BIOFUEL(IDBFMOH,I,J) *
+     &                                            BXHEIGHT_CM )
 
       ENDDO ! I
       ENDDO ! J

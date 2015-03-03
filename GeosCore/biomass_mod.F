@@ -203,7 +203,7 @@
 !******************************************************************************
 !
       ! References to F90 modules
-      USE DIAG_MOD,           ONLY : AD28, AD29, AD32_bb
+      USE DIAG_MOD,           ONLY : AD28, AD29, AD32_bb, AD64
       USE GC_BIOMASS_MOD,     ONLY : GC_COMPUTE_BIOMASS
       USE GC_BIOMASS_MOD,     ONLY : GC_READ_BIOMASS_BCOC
       USE GC_BIOMASS_MOD,     ONLY : GC_READ_BIOMASS_CO2
@@ -252,7 +252,7 @@
       REAL*8, PARAMETER   :: NAPTOTALSCALE = 66.09027d0
 
       LOGICAL, SAVE       :: FIRST = .TRUE.
-      LOGICAL             :: DO_ND28, DO_ND29, DO_ND32
+      LOGICAL             :: DO_ND28, DO_ND29, DO_ND32, DO_ND64
       LOGICAL, SAVE       :: USE_GFED
       LOGICAL, SAVE       :: USE_GFED2
       LOGICAL, SAVE       :: USE_GFED3
@@ -307,6 +307,7 @@
          DO_ND28 = ( ND28 > 0 )
          DO_ND29 = ( ND29 > 0 )
          DO_ND32 = ( ND32 > 0 )
+         DO_ND64 = ( ND64 > 0 )
 
          !==============================================================
          ! GFED2 updates BIOMASS if needed (phs, 12/17/08)
@@ -506,7 +507,7 @@
          !==============================================================
          ! Do the following on every timestep:
          !
-         ! ND28, ND29, ND32 diags [molec/cm2/s] or [atoms C/cm2/s] 
+         ! ND28, ND29, ND32, ND64 diags [molec/cm2/s] or [atoms C/cm2/s] 
          !==============================================================
 !$OMP PARALLEL DO
 !$OMP+DEFAULT( SHARED )
@@ -534,6 +535,11 @@
             ! ND32: NOx biomass emissions in [molec/cm2/s]
             IF ( DO_ND32 .and. N == IDBNO ) THEN
                AD32_bb(I,J) = AD32_bb(I,J) + BIOMASS(I,J,IDBNO)
+            ENDIF
+
+            ! ND64: MOH biomass emissions in [molec/cm2/s]
+            IF ( DO_ND64 .and. N == IDBMOH ) THEN
+               AD64(I,J,1,2) = AD64(I,J,1,2) + BIOMASS(I,J,IDBMOH)
             ENDIF
 
          ENDDO

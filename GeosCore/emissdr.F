@@ -110,7 +110,7 @@
       USE BROMOCARB_MOD,      ONLY : EMIS_CHBr3, EMIS_CH2Br2
       USE BROMOCARB_MOD,      ONLY : Br_SCALING
       USE CANOPY_NOX_MOD,     ONLY : GET_CANOPY_NOX
-      USE DIAG_MOD,           ONLY : AD29,          AD46
+      USE DIAG_MOD,           ONLY : AD29,          AD46,   AD64
       USE DIAG_MOD,           ONLY : AD32_fe,       AD32_so
       USE EMISSIONS_MOD,      ONLY : ISOP_SCALING
       USE GET_NDEP_MOD,       ONLY : GET_DEP_N 
@@ -670,6 +670,9 @@
                      EMISRR(I,J,IDEMOH) = EMISRR(I,J,IDEMOH) + 
      &                                    ( EMMOH / DTSRCE )
                   ENDIF
+
+                  ! Save direct emissions in ND64 (molec/cm2/s)
+                  IF ( ND64 > 0 ) AD64(I,J,1,4) = AD64(I,J,1,4) + EMMOH
                ENDIF
 
             !=================================================================

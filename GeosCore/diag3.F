@@ -3930,10 +3930,11 @@
 !  ----------------------------------------------------------------------------
 !  (1)  MOHan : MOH source from ANTHRO EMISSION  : molec/cm2/s : SCALESRCE
 !  (2)  MOHbb : MOH source from BIOMASS BURNING  : molec/cm2/s : SCALESRCE 
-!  (3)  MOHbg : MOH source from BIOGENIC EMISSION: molec/cm2/s : SCALESRCE 
-!  (4)  MOHop : MOH source from OCEANS           : molec/cm2/s : SCALESRCE 
-!  (5)  MOHol : MOH sink   from OCEANS           : molec/cm2/s : SCALECHEM
-!  (6)  MOHcl : MOH sink   from CLOUD UPTAKE     : molec/cm3/s : SCALECHEM
+!  (3)  MOHbf : MOH source from BIOFUEL EMISSION: molec/cm2/s : SCALESRCE 
+!  (4)  MOHbg : MOH source from BIOGENIC EMISSION: molec/cm2/s : SCALESRCE 
+!  (5)  MOHop : MOH source from OCEANS           : molec/cm2/s : SCALESRCE 
+!  (6)  MOHol : MOH sink   from OCEANS           : molec/cm2/s : SCALECHEM
+!  (7)  MOHcl : MOH sink   from CLOUD UPTAKE     : molec/cm3/s : SCALECHEM
 !******************************************************************************
 !
       IF ( ND64 > 0 ) THEN
@@ -3946,11 +3947,11 @@
             IF ( N > PD64 ) CYCLE
             NN = N 
                
-            ! Treat #6 differently since it is 3D & has different units
-            IF ( N < 6 ) THEN
+            ! Treat #7 differently since it is 3D & has different units
+            IF ( N < 7 ) THEN
 
                ! Methanol sinks are on the chemistry timestep
-               IF ( N == 5 ) SCALEX = SCALECHEM
+               IF ( N == 6 ) SCALEX = SCALECHEM
                
                ARRAY(:,:,1) = AD64(:,:,1,N) / SCALEX
                

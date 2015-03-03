@@ -118,7 +118,7 @@
       INTEGER, PARAMETER :: PD49=0                
       INTEGER, PARAMETER :: PD50=0            
       INTEGER, PARAMETER :: PD51=0           
-      INTEGER, PARAMETER :: PD52=1          
+      INTEGER, PARAMETER :: PD52=1
       INTEGER, PARAMETER :: PD54=0           
       INTEGER, PARAMETER :: PD55=3
       ! Potential temperature diagnostic (hotp 7/31/09)
@@ -137,7 +137,7 @@
 #endif
       INTEGER, PARAMETER :: PD62=NNPAR        
       INTEGER, PARAMETER :: PD63=0           
-      INTEGER, PARAMETER :: PD64=0
+      INTEGER, PARAMETER :: PD64=6        ! New for MOH
       INTEGER            :: PD65
       INTEGER, PARAMETER :: PD66=6           
       INTEGER, PARAMETER :: PD67=23 ! (Lin, 31/03/09)

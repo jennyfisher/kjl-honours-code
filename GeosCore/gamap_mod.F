@@ -1614,6 +1614,11 @@
       DESCRIPT(N) = 'POP partitioning/oxidation'
       OFFSET(N)   = SPACING * 53
 
+      N           = N + 1
+      CATEGORY(N) = 'MOH-SRCE'
+      DESCRIPT(N) = 'Methanol emissions'
+      OFFSET(N)   = SPACING * 64
+
 ! NEED TO DO THAT AT ONE POINT      
 !      ! New for CSPEC
 !      N           = N + 1
@@ -6305,7 +6310,6 @@
          SCALE(T,52) = 1e0
       ENDIF
 
-
       !-----------------------------------
       ! POPS (ND53) clf (03/22/11)
       !-----------------------------------
@@ -6663,6 +6667,51 @@
                   ! Nothing
             END SELECT
 
+         ENDDO
+      ENDIF
+
+      !-------------------------------------
+      ! Methanol sources & sinks (ND64)
+      !-------------------------------------
+      IF ( ND64 > 0 ) THEN
+
+         ! Number of tracers
+         NTRAC(64) = 6
+
+         ! Loop over tracers
+         DO T = 1, NTRAC(64)
+
+            ! Define the rest of the quantities
+            UNIT (T,64) = 'molec/cm2/s'
+            INDEX(T,64) = T + ( SPACING * 64 )
+            MOLC (T,64) = 1
+            MWT  (T,64) = 32e-3
+            SCALE(T,64) = 1e0
+
+            ! Get name and long-name
+            SELECT CASE( T )
+               CASE( 1 )
+                  NAME (T,64) = 'MOHan'
+                  FNAME(T,64) = 'MOH from anthro emis'
+               CASE( 2 )
+                  NAME (T,64) = 'MOHbb'
+                  FNAME(T,64) = 'MOH from biomass burning'
+               CASE( 3 )
+                  NAME (T,64) = 'MOHbg'
+                  FNAME(T,64) = 'MOH from biogenic emissions'
+               CASE( 4 )
+                  NAME (T,64) = 'MOHop'
+                  FNAME(T,64) = 'MOH from ocean source'
+               CASE( 5 )
+                  NAME (T,64) = 'MOHol'
+                  FNAME(T,64) = 'MOH from ocean sink'
+               CASE( 6 )
+                  NAME (T,64) = 'MOHcl'
+                  FNAME(T,64) = 'MOH from cloud uptake'
+                  UNIT (T,64) = 'molec/cm3/s'
+               CASE DEFAULT
+                  ! Nothing
+            END SELECT
          ENDDO
       ENDIF
 

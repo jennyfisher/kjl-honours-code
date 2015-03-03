@@ -3924,6 +3924,62 @@
       ENDIF
 !
 !******************************************************************************
+!  ND64: Methanol source & sink diagnostic (Category: "MOH-SRCE")
+!
+!   # : Field  : Description                          : Units      : Scale factor
+!  ----------------------------------------------------------------------------
+!  (1)  MOHan : MOH source from ANTHRO EMISSION  : molec/cm2/s : SCALESRCE
+!  (2)  MOHbb : MOH source from BIOMASS BURNING  : molec/cm2/s : SCALESRCE 
+!  (3)  MOHbg : MOH source from BIOGENIC EMISSION: molec/cm2/s : SCALESRCE 
+!  (4)  MOHop : MOH source from OCEANS           : molec/cm2/s : SCALESRCE 
+!  (5)  MOHol : MOH sink   from OCEANS           : molec/cm2/s : SCALECHEM
+!  (6)  MOHcl : MOH sink   from CLOUD UPTAKE     : molec/cm3/s : SCALECHEM
+!******************************************************************************
+!
+      IF ( ND64 > 0 ) THEN
+         CATEGORY = 'MOH-SRCE'
+         UNIT     = 'molec/cm2/s'
+         SCALEX   = SCALESRCE
+
+         DO M = 1, TMAX(64)
+            N  = TINDEX(64,M)
+            IF ( N > PD64 ) CYCLE
+            NN = N 
+               
+            ! Treat #6 differently since it is 3D & has different units
+            IF ( N < 6 ) THEN
+
+               ! Methanol sinks are on the chemistry timestep
+               IF ( N == 5 ) SCALEX = SCALECHEM
+               
+               ARRAY(:,:,1) = AD64(:,:,1,N) / SCALEX
+               
+               CALL BPCH2( IU_BPCH,   MODELNAME, LONRES,   LATRES,
+     &                     HALFPOLAR, CENTER180, CATEGORY, NN,
+     &                     UNIT,      DIAGb,     DIAGe,    RESERVED,
+     &                     IIPAR,     JJPAR,     1,        IFIRST,
+     &                     JFIRST,    LFIRST,    ARRAY(:,:,1) )
+
+            ELSE
+
+               SCALEX = SCALECHEM
+               UNIT   = 'molec/cm3/s'
+               DO L = 1, LD64
+                  ARRAY(:,:,L) = AD64(:,:,L,N) / SCALEX
+               ENDDO
+
+               CALL BPCH2( IU_BPCH,   MODELNAME, LONRES,   LATRES,
+     &                     HALFPOLAR, CENTER180, CATEGORY, NN,
+     &                     UNIT,      DIAGb,     DIAGe,    RESERVED,
+     &                     IIPAR,     JJPAR,     LD64,     IFIRST,
+     &                     JFIRST,    LFIRST,    ARRAY(:,:,1:LD64) )
+            ENDIF
+
+         ENDDO
+      ENDIF
+
+!
+!******************************************************************************
 !  ND65: Production/Loss of specified chemical families
 !
 !   # : Field   : Description                 : Units     : Scale Factor

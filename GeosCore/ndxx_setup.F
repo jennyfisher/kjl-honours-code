@@ -75,6 +75,7 @@
       USE DIAG_MOD,        ONLY : AD55,        AD66,        AD67
       USE DIAG_MOD,        ONLY : AD68,        AD69
       USE DIAG_MOD,        ONLY : AD10,        AD10em,      CTO3_24h
+      USE DIAG_MOD,        ONLY : AD64
       USE DIAG63_MOD,      ONLY : DO_SAVE_DIAG63
       USE DIAG_OH_MOD,     ONLY : INIT_DIAG_OH
       USE DRYDEP_MOD,      ONLY : NUMDEP
@@ -1119,8 +1120,6 @@
       ENDIF
 
       !=================================================================
-      ! ND53: Free diagnostics
-      !
       ! ND54 - Time spend in the troposphere
       !        --> uses AD54 array (allocatable)
       !=================================================================
@@ -1332,6 +1331,18 @@
          IF ( AS /= 0 ) CALL ALLOC_ERR( 'AD69' )
       ENDIF
 
+      !=================================================================
+      ! ND64: Methanol source diagnostics [molec/cm2/s]
+      !       --> uses AD64 array (allocatable)
+      !=================================================================
+      IF ( ND64 > 0 ) THEN 
+
+         LD64 = MIN( ND64, LLPAR )
+
+         ALLOCATE( AD64( IIPAR, JJPAR, LD64, PD64 ), STAT=AS )
+         IF ( AS /= 0 ) CALL ALLOC_ERR( 'AD64' )
+      ENDIF
+      
       ! Save LD* fields back into the Input_Opt object (bmy, 11/9/12)
       Input_Opt%LD01  = LD01
       Input_Opt%LD02  = LD02

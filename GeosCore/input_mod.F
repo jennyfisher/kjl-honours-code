@@ -4988,7 +4988,7 @@
       CALL SET_TINDEX( am_I_Root, 62, ND62, SUBSTRS(2:N), N-1, PD62 )
 
       !--------------------------
-      ! ND64: Free
+      ! ND64: MOH source/sink
       !--------------------------
       CALL SPLIT_ONE_LINE( SUBSTRS, N, -1, 'read_diagnostic_menu:63' )
       READ( SUBSTRS(1), * ) ND64

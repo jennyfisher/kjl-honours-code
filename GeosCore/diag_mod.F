@@ -256,6 +256,9 @@
       REAL*4,  ALLOCATABLE :: AD63(:,:,:)
       INTEGER, ALLOCATABLE :: AD63_COUNT
 
+      ! For ND64 -- methanol sources & sinks
+      REAL*4,  ALLOCATABLE :: AD64(:,:,:,:)
+
       ! For ND66 -- I-6 fields diagnostic
       REAL*4,  ALLOCATABLE :: AD66(:,:,:,:)      
 
@@ -267,6 +270,7 @@
 
       ! For ND69 -- DXYP diagnostic
       REAL*4,  ALLOCATABLE :: AD69(:,:,:)      
+
 !
 ! !REVISION HISTORY:
 !  30 Nov 1999 - A. Fiore - Initial version
@@ -469,6 +473,7 @@
 #endif
       IF ( ALLOCATED( AD63        ) ) DEALLOCATE( AD63        )
       IF ( ALLOCATED( AD63_COUNT  ) ) DEALLOCATE( AD63_COUNT  )
+      IF ( ALLOCATED( AD64        ) ) DEALLOCATE( AD64        )
       IF ( ALLOCATED( AD66        ) ) DEALLOCATE( AD66        )
       IF ( ALLOCATED( AD68        ) ) DEALLOCATE( AD68        )
       IF ( ALLOCATED( AD69        ) ) DEALLOCATE( AD69        )

@@ -39,7 +39,7 @@
       USE TIME_MOD,           ONLY : GET_HOUR
       USE TRACERID_MOD,       ONLY : IDENO,    IDEO3,    IDEHNO3
       USE TRACERID_MOD,       ONLY : IDTCO,    IDTHNO3
-      USE TRACERID_MOD,       ONLY : IDTC2H6,  IDTNO2
+      USE TRACERID_MOD,       ONLY : IDTC2H6,  IDTNO2,   IDTMOH
       USE VISTAS_ANTHRO_MOD,  ONLY : GET_VISTAS_ANTHRO
       USE ICOADS_SHIP_MOD,    ONLY : GET_ICOADS_SHIP !(cklee, 7/09/09)
 
@@ -174,6 +174,10 @@
       INTEGER :: NOXHOUR
       REAL*8  :: RCP
 
+      ! For methanol (ratio from DBM, KCW)
+      REAL*8            :: EMX_CO(IIPAR, JJPAR)
+      REAL*8, PARAMETER :: RATIO_MOH_CO = 0.012d0
+
       ! For fields from Input_Opt
       LOGICAL :: LBRAVO
       LOGICAL :: LEMEP
@@ -236,6 +240,9 @@
       ! the US, then weekend is Sat/Sun.
       DOW_LT          = GET_DAY_OF_WEEK_LT( I, J, 1 )
       WEEKDAY         = ( DOW_LT > 0 .and. DOW_LT < 6 )
+
+      ! For use with methanol, reset every time we process CO
+      IF ( NN == IDTCO ) EMX_CO(I,J) = 0d0
 
       !=================================================================
       ! Call EMF_SCALE to do the following:
@@ -1030,6 +1037,14 @@
             EMX(1) = EMX(1) + SHIP
             
          ENDIF
+
+         ! Special case for methanol: scale to CO
+         ! EMX_CO is in kg CO/box/dt and ratio is molar, so also need to
+         ! convert from kg CO to kg MOH
+         IF ( NN == IDTMOH ) THEN
+            EMX(1) = EMX_CO(I,J) * RATIO_MOH_CO *
+     &               XNUMOL(IDTCO) / XNUMOL(NN)
+         ENDIF
      
          !--------------------------------------------------------------
          ! Store in EMISRR array and archive diagnostics
@@ -1051,6 +1066,9 @@
          ENDIF    
 
       ENDIF
+
+      ! For use with methanol, store EMX(1) of CO
+      IF ( NN == IDTCO ) EMX_CO(I,J) = EMX(1)
 
       !=================================================================
       ! Restore EMISR, EMISRN to original values

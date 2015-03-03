@@ -142,6 +142,7 @@
 !                              with either TOMAS=yes or TOMAS40=yes
 !  13 Aug 2013 - M. Sulprizio- Add modifications for updated SOA and SOA + 
 !                              semivolatile POA simulations (H. Pye)
+!  03 Mar 2015 - J. Fisher   - Add methanol
 !EOP
 !------------------------------------------------------------------------------
 !BOC
@@ -162,7 +163,8 @@
 #else
       ! SOAupdate: Increase NSOLMAX from 60 to 110 for SOA + semivol POA
       !  (jje, mpayer,7/5/11)
-      INTEGER, PARAMETER   :: NSOLMAX = 110     ! Max # of soluble tracers
+      ! +1 for MOH
+      INTEGER, PARAMETER   :: NSOLMAX = 111     ! Max # of soluble tracers
                                                 !  for regular G-C runs
 #endif
       REAL*8,  PARAMETER   :: EPSILON = 1d-32   ! A very small positive #
@@ -839,7 +841,7 @@
       USE TRACERID_MOD,       ONLY : IDTMOBA,   IDTPROPNN
       USE TRACERID_MOD,       ONLY : IDTISOPN,  IDTMMN
       USE TRACERID_MOD,       ONLY : IDTIEPOX,  IDTRIP
-      USE TRACERID_MOD,       ONLY : IDTMAP
+      USE TRACERID_MOD,       ONLY : IDTMAP,    IDTMOH
       USE TRACERID_MOD,       ONLY : IDTHOBr,   IDTHBr,    IDTBr2
       USE TRACERID_MOD,       ONLY : IDTPOPPOC, IDTPOPPBC, IDTPOPG 
       ! SOAupdate: update biogenics (new mtp) (hotp 5/24/10)
@@ -1133,6 +1135,59 @@
 
          ! ND38 index
          ISOL = GET_ISOL( N ) 
+
+      !-------------------------------
+      ! MOH (liquid phase only) (jaf, 6/10/13)
+      !-------------------------------
+      ELSE IF ( N == IDTMOH ) THEN 
+
+         ! No scavenging at the surface
+         F(:,:,1) = 0d0
+
+         ! Apply scavenging in levels 2 and higher
+         DO L = 2, LLPAR
+         DO J = 1, JJPAR
+         DO I = 1, IIPAR
+
+            ! Compute liquid to gas ratio for MOH, using
+            ! the appropriate parameters for Henry's law
+            ! (Eqs. 7, 8, and Table 1, Jacob et al, 2000)
+            CALL COMPUTE_L2G( 2.27d2,    -4.9d3, 
+     &                        T(I,J,L), CLDLIQ(I,J,L), L2G )
+
+            ! Fraction of MOH in liquid phase 
+            ! NOTE: MOH does not exist in the ice phase!
+            ! (Eqs. 4, 5, 6, Jacob et al, 2000)
+            C_TOT = 1d0 + L2G
+            F_L   = L2G / C_TOT
+
+            ! Compute the rate constant K.  The retention factor 
+            ! for liquid MOH is 0.0 for T <= 248K and 0.02 for 
+            ! 248 K < T < 268 K. (Eq. 1, Jacob et al, 2000)
+            IF ( T(I,J,L) >= 268d0 ) THEN
+               K = KC * F_L
+
+            ELSE IF ( T(I,J,L) > 248d0 .and. T(I,J,L) < 268d0 ) THEN
+               K = KC * ( 2d-2 * F_L )
+
+            ELSE
+               K = 0d0
+
+            ENDIF
+
+            ! Distance between grid box centers [m]
+            TMP = 0.5d0 * ( BXHEIGHT(I,J,L-1) + BXHEIGHT(I,J,L) )
+
+            ! F is the fraction of MOH scavenged out of the updraft
+            ! (Eq. 2, Jacob et al, 2000)
+            F(I,J,L) = 1d0 - EXP( -K * TMP / Vud(I,J) )
+
+         ENDDO
+         ENDDO
+         ENDDO
+
+         ! ND38 index
+         ISOL = GET_ISOL( N )
 
       !-------------------------------
       ! HOBr (liquid phase only)
@@ -2927,7 +2982,7 @@
       USE TRACERID_MOD,       ONLY : IDTGLYX,   IDTMGLY,   IDTGLYC
       USE TRACERID_MOD,       ONLY : IDTSOAG,   IDTSOAM
       USE TRACERID_MOD,       ONLY : IDTMOBA,   IDTPROPNN
-      USE TRACERID_MOD,       ONLY : IDTISOPN,  IDTMMN
+      USE TRACERID_MOD,       ONLY : IDTISOPN,  IDTMMN,    IDTMOH
       USE TRACERID_MOD,       ONLY : IDTIEPOX,  IDTRIP,    IDTMAP
       USE TRACERID_MOD,       ONLY : IDTHOBr,   IDTHBr,    IDTBr2
       USE TRACERID_MOD,       ONLY : IDTPOPPOC, IDTPOPPBC, IDTPOPG
@@ -3279,6 +3334,41 @@
          ! Compute RAINFRAC, the fraction of rained-out CH3OOH
          ! (Eq. 10, Jacob et al, 2000)
          RAINFRAC = GET_RAINFRAC( K, F, DT ) 
+
+      !------------------------------
+      ! CH3OH (methanol, MOH)
+      ! dbm 05/26/05, 8/2/2010
+      !------------------------------      !
+
+      ELSE IF ( N == IDTMOH ) THEN
+
+         ! Compute liquid to gas ratio for methanol, using
+         ! the appropriate parameters for Henry's law
+         ! (Eqs. 7, 8 and Table 1, Jacob et al, 2000)
+         CALL COMPUTE_L2G( 2.27d2, -4.9d3, TK, CLDLIQ(I,J,L), L2G )
+
+         ! Fraction of methanol in liquid phase 
+         ! (Eqs. 4, 5, Jacob et al, 2000)
+         C_TOT = 1d0 + L2G
+         F_L   = L2G / C_TOT
+
+         ! Compute the rate constant K.  The retention factor  
+         ! for liquid methanol is 0.02 for 248 K < T < 268 K, and 
+         ! 1.0 for T > 268 K. (Eq. 1, Jacob et al, 2000)
+         IF ( TK >= 268d0 ) THEN
+            K = K_RAIN * F_L
+
+         ELSE IF ( TK > 248d0 .and. TK < 268d0 ) THEN
+            K = K_RAIN * ( 2d-2 * F_L )
+
+         ELSE
+            K = 0d0
+
+         ENDIF
+
+         ! Compute RAINFRAC, the fraction of rained-out MOH
+         ! (Eq. 10, Jacob et al, 2000)
+         RAINFRAC = GET_RAINFRAC( K, F, DT )
 
       !!!!!!!!!
       !FP_ISOP!
@@ -4231,7 +4321,7 @@
       USE TRACERID_MOD, ONLY : IDTGLYX,  IDTMGLY,  IDTGLYC
       USE TRACERID_MOD, ONLY : IDTSOAG,  IDTSOAM
       USE TRACERID_MOD, ONLY : IDTMOBA,  IDTPROPNN
-      USE TRACERID_MOD, ONLY : IDTISOPN, IDTMMN
+      USE TRACERID_MOD, ONLY : IDTISOPN, IDTMMN,   IDTMOH
       USE TRACERID_MOD, ONLY : IDTIEPOX, IDTRIP, IDTMAP
       ! jpp 4/27/09
       USE TRACERID_MOD, ONLY : IDTHOBr,  IDTHBr,   IDTBr2
@@ -4471,6 +4561,14 @@
       ELSE IF ( N == IDTMP ) THEN
          KIN      = .FALSE.
          CALL WASHFRAC_LIQ_GAS( 3.1d2, -5.2d3, PP,       DT,  F,
+     &                          DZ,     TK,    WASHFRAC, KIN  )
+
+      !------------------------------
+      ! MOH (liquid & gas phases)
+      !------------------------------
+      ELSE IF ( N == IDTMOH ) THEN
+         KIN      = .FALSE.
+         CALL WASHFRAC_LIQ_GAS( 2.3d2, -4.9d3, PP,       DT,  F,
      &                          DZ,     TK,    WASHFRAC, KIN  )
 
       !------------------------------
@@ -7745,7 +7843,7 @@
       USE TRACERID_MOD, ONLY : IDTGLYX,   IDTMGLY,   IDTGLYC
       USE TRACERID_MOD, ONLY : IDTSOAG,   IDTSOAM
       USE TRACERID_MOD, ONLY : IDTMOBA,   IDTPROPNN
-      USE TRACERID_MOD, ONLY : IDTISOPN,  IDTMMN
+      USE TRACERID_MOD, ONLY : IDTISOPN,  IDTMMN,    IDTMOH
       USE TRACERID_MOD, ONLY : IDTIEPOX,  IDTRIP,    IDTMAP
       USE TRACERID_MOD, ONLY : IDTHOBr,   IDTHBr,    IDTBr2
       USE TRACERID_MOD, ONLY : IDTPOPPOC, IDTPOPPBC,  IDTPOPG
@@ -7907,6 +8005,10 @@
             NSOL         = NSOL + 1
             IDWETD(NSOL) = IDTIEPOX
          ! end FP
+
+         ELSE IF ( N == IDTMOH ) THEN
+            NSOL         = NSOL + 1
+            IDWETD(NSOL) = IDTMOH
 
          !-----------------------------
          ! Sulfate aerosol tracers
@@ -8396,6 +8498,7 @@
                                                      ! IEPOX, PMNN
 
          NMAX = NMAX + 3                             ! HBr,   HOBr,   Br2
+         NMAX = NMAX + 1                             ! MOH
 
          IF ( LSULF )    NMAX = NMAX + 8             ! SO2,   SO4,    MSA,
                                                      ! NH3,   NH4,    NIT

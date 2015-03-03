@@ -440,7 +440,8 @@
       !INTEGER, PARAMETER :: NEMPARA = 21 
       !  Add RCHO, HCOOH, ACTA
       !INTEGER, PARAMETER :: NEMPARA = 26 
-      INTEGER, PARAMETER :: NEMPARA = 29
+      ! NEMPARA+1 for MOH
+      INTEGER, PARAMETER :: NEMPARA = 30
       INTEGER, PARAMETER :: NEMPARB = 20
 
       !=================================================================

@@ -3175,6 +3175,7 @@
 !  (18) CHBr3  : Bromoform      :       kg/m2/s : SCALESRCE
 !  (19) CH2Br2 : Dibromomethane :       kg/m2/s : SCALESRCE
 !  (20) Br2    : Molec. Bromine :       kg/m2/s : SCALESRCE
+!  (21) MOH    : Methanol       :   molec/cm2/s : SCALESRCE
 !
 !  NOTES:
 !  (1) ND46 now uses allocatable array AD46 instead of AIJ (bmy, 3/16/00)
@@ -3185,6 +3186,7 @@
 !       of "tracerinfo.dat" and "diaginfo.dat" for GAMAP. (bmy, 1/2/01)
 !  (4) Added MBO as tracer #5. (tmf, bmy, 10/20/05)
 !  (5) Added C2H4 as tracer #6. (tmf, 1/20/09)
+! 3 Mar 2015 - J. Fisher - Added MOH as tracer #21
 !******************************************************************************
 !
       IF ( ND46 > 0 ) THEN
@@ -3206,6 +3208,8 @@
             IF ( N == 18 .and. IDTCHBr3  == 0 ) CYCLE
             IF ( N == 19 .and. IDTCH2Br2 == 0 ) CYCLE
             IF ( N == 20 .and. IDTBr2    == 0 ) CYCLE
+
+            IF ( N == 21 .and. IDTMOH == 0 ) CYCLE
 
             ARRAY(:,:,1) = AD46(:,:,N) / SCALESRCE
                

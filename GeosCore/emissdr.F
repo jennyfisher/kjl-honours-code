@@ -100,6 +100,7 @@
 !  13 Aug 2013 - M. Sulprizio- Update MEGAN biogenics to include sesquiterpenes
 !                              for updated SOA simulation (H. Pye)
 !  20 Aug 2013 - R. Yantosca - Removed "define.h", this is now obsolete
+!  03 Mar 2015 - J. Fisher   - Add methanol
 !******************************************************************************
 !
       ! References to F90 modules
@@ -125,6 +126,7 @@
       USE MEGAN_MOD,          ONLY : GET_EMISOP_MEGAN
       USE MEGAN_MOD,          ONLY : GET_EMMBO_MEGAN
       USE MEGAN_MOD,          ONLY : GET_EMMONOT_MEGAN
+      USE MEGAN_MOD,          ONLY : GET_EMMOH_MEGAN
       USE MEGAN_MOD,          ONLY : GET_EMTERP_MEGAN
       USE MEGANUT_MOD,        ONLY : XLTMMP
       USE MODIS_LAI_MOD
@@ -138,6 +140,7 @@
       USE TRACERID_MOD,       ONLY : IDEMONX, IDEC2H4
       USE TRACERID_MOD,       ONLY : IDTMONX, IDTC2H4
       USE TRACERID_MOD,       ONLY : IDECHBr3, IDECH2Br2
+      USE TRACERID_MOD,       ONLY : IDEMOH,   IDTMOH
  
       USE CMN_SIZE_MOD             ! Size parameters
       USE COMODE_LOOP_MOD          ! IVERT?
@@ -203,6 +206,9 @@
       ! SOAupdate: Sesquiterpenes (hotp 3/1/10)
       REAL*8                 :: FARN, BCAR, OSQT
       REAL*8                 :: OMTP ! other monoterpenes 3/5/10
+
+      ! Methanol
+      REAL*8                 :: EMMOH
 
       ! For fields from Input_Opt
       LOGICAL                :: LANTHRO
@@ -501,6 +507,10 @@
                   EMIS = GET_EMISOP_MEGAN(  I, J,     SC, TMMP, 
      &                                      PDR, PDF, XNUMOL_C )
 
+                  ! Methanol
+                  EMMOH = GET_EMMOH_MEGAN(  I, J,     SC, TMMP, 
+     &                                      PDR, PDF, XNUMOL_C )
+
                ENDIF
  
                !FP_ISOP (6/2009)
@@ -607,6 +617,8 @@
                EMISS_BVOC( I , J , 12) =  BCAR   / AREA_CM2 / DTSRCE  
                EMISS_BVOC( I , J , 13) =  OSQT   / AREA_CM2 / DTSRCE 
                EMISS_BVOC( I , J , 14) =  OMTP   / AREA_CM2 / DTSRCE
+               ! Methanol
+               EMISS_BVOC( I , J , 15) =  EMMOH  / AREA_CM2 / DTSRCE
                
 
 !-----------------------------------------------------------------------------
@@ -644,6 +656,19 @@
                   IF ( NO_TAGCO ) THEN
                      EMISRR(I,J,IDEISOP) = EMISRR(I,J,IDEISOP) + 
      &                                     ( EMIS / DTSRCE )
+                  ENDIF
+               ENDIF
+
+               !==============================================================
+               ! save biogenic methanol emission for later use
+               ! EMISRR has units [atoms C/box/s] 
+               !==============================================================
+               IF ( IDTMOH /= 0 ) THEN
+
+                  ! NOTE: Don't save into EMISRR for the tagged CO 
+                  IF ( NO_TAGCO ) THEN
+                     EMISRR(I,J,IDEMOH) = EMISRR(I,J,IDEMOH) + 
+     &                                    ( EMMOH / DTSRCE )
                   ENDIF
                ENDIF
 
@@ -810,6 +835,7 @@
 !     AD46(:,:,18) = Total biogenic CHBr3    emissions [kg/m2/s]
 !     AD46(:,:,19) = Total biogenic CH2Br2   emissions [kg/m2/s]
 !     AD46(:,:,20) = Total biogenic SSBr2    emissions [kg/m2/s]
+!     AD46(:,:,21) = Total biogenic MOH      emissions [atoms C/cm2/s]
 !
 !  NOTES: 
 !  (1 ) Now make ACET tracer #2 and PRPE tracer #3 (bmy, 9/13/01)
@@ -911,6 +937,10 @@
 
                   ! Note: IDEBr2 is added to AD46(I,J,20) in ssa_bromine_mod.F
                
+                  ! MOH emissions [atoms C/cm2/s] -- tracer #21
+                  AD46(I,J,21) = AD46(I,J,21) +
+     &                           ( EMMOH / AREA_CM2 /DTSRCE)
+
                ENDIF ! ND46
             ENDIF    ! LBIOGENIC
          ENDDO

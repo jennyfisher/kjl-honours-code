@@ -6014,7 +6014,8 @@
       IF ( ND46 > 0 ) THEN 
 
          ! Number of tracers
-         NTRAC(46) = 20
+         ! plus one for MOH
+         NTRAC(46) = 21
 
          ! Loop over tracers
          DO T = 1, NTRAC(46)
@@ -6096,13 +6097,16 @@
                   UNIT  (T,46) = 'kg/m2/s'
                   MWT   (T,46) = 1.60e-1   !in [kg/mol]
                   SCALE (T,46) = 1e0
+               CASE( 21 )
+                  NAME(T,46) = 'MOH'
+                  MOLC(T,46) = 1 ! [C/molecule]
                CASE DEFAULT
                   ! Nothing
             END SELECT
 
             !jpp, 9/6/07: preventing these default quantities
             !             from overwriting CHBr3's info.
-            IF ( T < 18 ) THEN
+            IF ( T < 18 .or. T > 20 ) THEN
                ! Define the rest of the quantities
                INDEX(T,46) = T + ( SPACING * 21 )
                FNAME(T,46) = TRIM( NAME(T,46) ) // ' emissions'

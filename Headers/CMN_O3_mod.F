@@ -180,6 +180,7 @@
 !  13 Aug 2013 - M. Sulprizio- Increase last dimension of EMISS_BVOC to include
 !                              sesquiterpenes and add EMISTNAP for SOA +
 !                              semivolatile POA simulation (H. Pye)
+!  03 Mar 2015 - J. Fisher   - Add 1 emission species to EMISS_BVOC (MOH)
 !EOP
 !------------------------------------------------------------------------------
 !BOC
@@ -194,7 +195,8 @@
       ALLOCATE( EMISRR    ( IIPAR, JJPAR, NEMPARA+NEMPARB ), STAT=RC )
       ALLOCATE( EMISRRN   ( IIPAR, JJPAR, NOXEXTENT       ), STAT=RC )
       ! SOAupdate: Now 14 (hotp 3/5/10)
-      ALLOCATE( EMISS_BVOC( IIPAR, JJPAR, 14              ), STAT=RC )
+      ! +1 for MOH
+      ALLOCATE( EMISS_BVOC( IIPAR, JJPAR, 15              ), STAT=RC )
       ALLOCATE( EMISTNOX  ( IIPAR, JJPAR, 4, 2            ), STAT=RC )
       ALLOCATE( EMISTETHE ( IIPAR, JJPAR                  ), STAT=RC )
       ALLOCATE( EMISTCO   ( IIPAR, JJPAR                  ), STAT=RC )

@@ -100,6 +100,8 @@
       USE HCN_CH3CN_MOD,      ONLY : CHEM_HCN_CH3CN
       USE ISOROPIAII_MOD,     ONLY : DO_ISOROPIAII
       USE MERCURY_MOD,        ONLY : CHEMMERCURY
+      USE METHANOL_MOD,       ONLY : CLOUD_SINK_METHANOL
+      USE METHANOL_MOD,       ONLY : OCEAN_SINK_METHANOL
       USE OPTDEPTH_MOD,       ONLY : OPTDEPTH
       USE POPS_MOD,           ONLY : CHEMPOPS
       USE RnPbBe_MOD,         ONLY : CHEMRnPbBe
@@ -114,6 +116,7 @@
       USE TRACERID_MOD,       ONLY : IDTACET
       USE TRACERID_MOD,       ONLY : IDTISOP
       USE TRACERID_MOD,       ONLY : IDTDST1
+      USE TRACERID_MOD,       ONLY : IDTMOH
 #if   defined( TOMAS )
       USE TOMAS_MOD,          ONLY : DO_TOMAS  !(win, 7/14/09)
       USE TRACERID_MOD,       ONLY : IDTNK1    !(win, 7/14/09)
@@ -391,6 +394,12 @@
             ! Remove acetone ocean sink
             IF ( IDTACET /= 0 ) THEN
                CALL OCEAN_SINK_ACET( STT(:,:,1,IDTACET), State_Met ) 
+            ENDIF
+             
+            ! Remove methanol from cloud & ocean sinks
+            IF ( IDTMOH /= 0 ) THEN
+                CALL OCEAN_SINK_METHANOL( STT(:,:,1,IDTMOH), State_Met )
+                CALL CLOUD_SINK_METHANOL( STT(:,:,:,IDTMOH), State_Met )
             ENDIF
              
          !---------------------------------

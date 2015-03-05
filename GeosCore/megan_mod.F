@@ -2042,7 +2042,7 @@
       ! SOAupdate: Sesq normalization factor added (hotp 3/16/2010)
       ! NORM_V(5) = 1/( 0.1*0.6 + 0.1*1 + 0.8*1.075 )
       DATA   NORM_V(1), NORM_V(2), NORM_V(3), NORM_V(4), NORM_V(5),
-     &       NORM_V(6), NORM_V(6)
+     &       NORM_V(6), NORM_V(7)
      &     /                 1.0d0 , ! Constant
      &       0.96153846153846145d0 , ! Monoterpenes
      &       0.94339622641509424d0 , ! Isoprene & MBO

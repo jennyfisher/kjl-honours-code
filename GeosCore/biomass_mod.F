@@ -222,6 +222,7 @@
       USE TRACERID_MOD,       ONLY : IDBCO, IDBNO
       USE TRACERID_MOD,       ONLY : IDBCO2
       USE TRACERID_MOD,       ONLY : IDBMOH, IDTMOH, IDTCO
+      USE TRACERID_MOD,       ONLY : IDBHCN, IDTHCN
       USE TRACERID_MOD,       ONLY : IDBXYLE, IDBTOLU, IDBBENZ ! hotp for debug
       ! SOAupdate: POA  (hotp 10/11/09)
       USE TRACERID_MOD,       ONLY : IDTPOA1
@@ -504,6 +505,14 @@
      &                            TRACER_MW_KG(IDTCO) /
      &                            TRACER_MW_KG(IDTMOH)
       
+         ! HCN emissions
+         ! Based on HCN offline simulation from D. Jones, the ratio of
+         ! HCN emitted to CO emitted from biomass burning is 0.27%
+         ! on a molar basis.
+         ! BIOMASS is in molec/cm2/s, so apply directly
+         IF ( IDBHCN > 0 )
+     &      BIOMASS(:,:,IDBHCN) = BIOMASS(:,:,IDBCO) * 0.27d-2
+      
          !==============================================================
          ! Do the following on every timestep:
          !
@@ -590,7 +599,7 @@
       USE TRACERID_MOD, ONLY : IDBC2H2, IDBGLYC, IDBHAC
       ! SOAupdate: Add NAP emissions (hotp 8/23/09)
       USE TRACERID_MOD, ONLY : IDBNAP
-      USE TRACERID_MOD, ONLY : IDBMOH
+      USE TRACERID_MOD, ONLY : IDBMOH,  IDBHCN
 
       USE TRACERID_MOD, ONLY : IDTNO,   IDTCO,   IDTALK4, IDTACET 
       USE TRACERID_MOD, ONLY : IDTMEK,  IDTALD2, IDTPRPE, IDTC3H8
@@ -602,7 +611,7 @@
       USE TRACERID_MOD, ONLY : IDTC2H2, IDTC2H4
       ! SOAupdate: Add NAP emissions (hotp 8/23/09)
       USE TRACERID_MOD, ONLY : IDTNAP,  IDTPOA1
-      USE TRACERID_MOD, ONLY : IDTMOH
+      USE TRACERID_MOD, ONLY : IDTMOH,  IDTHCN
 
       USE TRACER_MOD,   ONLY : ITS_A_CH4_SIM ! (mpayer, 2/14/12)
 
@@ -647,6 +656,7 @@
       ! SOAupdate: Add NAP (hotp 8/23/09)
       IF ( IDBNAP   /= 0 ) NBIOTRCE = NBIOTRCE + 1
       IF ( IDBMOH   /= 0 ) NBIOTRCE = NBIOTRCE + 1
+      IF ( IDBHCN   /= 0 ) NBIOTRCE = NBIOTRCE + 1
 
       ! Fill BIOTRCE w/ appropriate TRACER ID #'s
       ! Replaced NOx with NO (mpayer, 3/14/13)
@@ -686,6 +696,7 @@
       ! SOAupdate: Add NAP (hotp 8/23/09)
       IF ( IDBNAP   /= 0 ) BIOTRCE(IDBNAP)  = IDTNAP
       IF ( IDBMOH   /= 0 ) BIOTRCE(IDBMOH)  = IDTMOH
+      IF ( IDBHCN   /= 0 ) BIOTRCE(IDBHCN)  = IDTHCN
 
       ! Set T/F of BIOBGAS() (hotp 8/3/09)
       ! BIOBGAS(IDBxx) is true if IDBxx should be handled by
@@ -725,6 +736,7 @@
       IF ( IDBGLYC  /= 0 ) BIOBGAS(IDBGLYC) = .TRUE.
       IF ( IDBHAC   /= 0 ) BIOBGAS(IDBHAC ) = .TRUE.
       IF ( IDBMOH   /= 0 ) BIOBGAS(IDBMOH ) = .TRUE.
+      IF ( IDBHCN   /= 0 ) BIOBGAS(IDBHCN ) = .TRUE.
 
 
       !FP_ISOP

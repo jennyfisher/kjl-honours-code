@@ -516,7 +516,8 @@
       ! increase NBIOMAX to 25 fpr CH4 (kjw)
       ! SOAupdate: add 1 for naphthalene, now 26 (hotp 7/21/10)
       ! +1 for MOH
-      INTEGER, PARAMETER :: NBIOMAX = 27
+      ! +1 for HCN
+      INTEGER, PARAMETER :: NBIOMAX = 28
 
 #if   defined( TOMAS )
       INTEGER, PARAMETER :: TOMASSPEC = 8

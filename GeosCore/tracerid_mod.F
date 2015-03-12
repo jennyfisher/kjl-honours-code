@@ -237,6 +237,7 @@
 !                              for old SOA simulation (H. Pye)
 !  20 Aug 2013 - R. Yantosca - Removed "define.h", this is now obsolete
 !  27 Feb 2013 - J. Fisher   - Add MOH (methanol)
+!  27 Feb 2013 - J. Fisher   - Add HCN
 !******************************************************************************
 !
 
@@ -273,7 +274,7 @@
       INTEGER            :: IDDRYAPAN, IDDRYENPAN, IDDRYGLPAN
       INTEGER            :: IDDRYGPAN, IDDRYMPAN, IDDRYNIPAN
       INTEGER            :: IDMPN
-      INTEGER            :: IDMOH
+      INTEGER            :: IDMOH,     IDHCN
       ! jpp, 6/5/09, adding IDDRY__ id's for dry deposition
       INTEGER            :: IDDRYHOBr, IDDRYHBr, IDDRYBrNO3
 
@@ -324,7 +325,7 @@
       INTEGER            :: IDTPYPAN,IDTMAP
       INTEGER            :: IDTAP
       INTEGER            :: IDTMPN
-      INTEGER            :: IDTMOH
+      INTEGER            :: IDTMOH,  IDTHCN
 
       ! For tagged Ox simulation
       INTEGER            :: IDTO3Strt
@@ -497,7 +498,7 @@
       INTEGER            :: IDEMBO
       INTEGER            :: IDEGLYC
       INTEGER            :: IDEGLYX, IDEMGLY
-      INTEGER            :: IDEHAC,  IDEMOH
+      INTEGER            :: IDEHAC,  IDEMOH,   IDEHCN
       !%%%%(bmy 4/13/11)
       INTEGER            :: IDERCHO, IDEHCOOH, IDEACTA       
       !jpp, 8/24/07: emission ID's for Br biogenic emissions in fullchem runs
@@ -518,7 +519,7 @@
       ! SOAupdate: added gas phase NAP chemistry (hotp 6/24/09)
       ! semivolpoa5: add IVOC chemistry (hotp 3/30/09)
       INTEGER            :: IDBFNAP
-      INTEGER            :: IDBFMOH
+      INTEGER            :: IDBFMOH,  IDBFHCN
 
       !BIOMASS BURNING  !(FP,01/27/10)
       INTEGER            :: IDBNO,   IDBCO,   IDBALK4, IDBACET 
@@ -537,7 +538,7 @@
       INTEGER            :: IDBGLYC, IDBHAC      
       ! add biomass burning emiss too (hotp 8/24/09)
       INTEGER            :: IDBNAP
-      INTEGER            :: IDBMOH
+      INTEGER            :: IDBMOH,  IDBHCN
 
       CONTAINS
 
@@ -598,6 +599,7 @@
 !  13 Aug 2013 - M. Sulprizio- Add modifications for updated SOA and SOA + 
 !                              semivolatile POA simulations; Removed tracers
 !                              for old SOA simulation (H. Pye)
+!  12 Mar 2015 - J. Fisher   - Allow HCN to be tracer in full chem
 !******************************************************************************
 !
       ! References to F90 modules
@@ -607,6 +609,7 @@
       USE TRACER_MOD,  ONLY : ITS_A_TAGCO_SIM, ITS_A_MERCURY_SIM
       USE TRACER_MOD,  ONLY : ITS_A_POPS_SIM
       USE TRACER_MOD,  ONLY : ITS_A_H2HD_SIM
+      USE TRACER_MOD,  ONLY : ITS_A_HCN_SIM
       USE TRACER_MOD,  ONLY : N_TRACERS,       TRACER_NAME
       USE ERROR_MOD,   ONLY : ERROR_STOP
 
@@ -1329,14 +1332,21 @@
                NEMANTHRO= 8      ! Reset NEMANTHRO here too (bmy, 7/25/06)
                EXIT
 
-            ! Special case: HCN needs CO biomass/biofuel
             CASE ( 'HCN' )
                COUNT    = COUNT + 1
-               IDTCO    = 1
-               IDBFCO   = COUNT
                COUNT_BB = COUNT_BB + 1
-               IDBCO    = COUNT_BB 
-               EXIT
+
+               IF ( ITS_A_HCN_SIM() ) THEN
+                  ! Special case: HCN sim needs CO biomass/biofuel
+                  IDTCO    = 1
+                  IDBFCO   = COUNT
+                  IDBCO    = COUNT_BB 
+                  EXIT
+               ELSE
+                  IDTHCN   = N
+                  IDBFHCN  = COUNT
+                  IDBHCN   = COUNT_BB
+               ENDIF
 
             !--------------------------------
             ! Total & tagged mercury tracers 
@@ -2748,6 +2758,10 @@
             NEMANTHRO = NEMANTHRO + 1
             IDEMOH   = NEMANTHRO
           ENDIF
+         IF ( IDTHCN > 0 ) THEN
+            NEMANTHRO = NEMANTHRO + 1
+            IDEHCN   = NEMANTHRO
+          ENDIF
          !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
          ! Now add additional species treated in SMVGEAR that are NOT
@@ -2833,6 +2847,7 @@
       IF ( IDEGLYC /= 0 ) IDEMS(IDEGLYC) = IDTGLYC
       IF ( IDEHAC  /= 0 ) IDEMS(IDEHAC ) = IDTHAC
       IF ( IDEMOH  /= 0 ) IDEMS(IDEMOH ) = IDTMOH
+      IF ( IDEHCN  /= 0 ) IDEMS(IDEHCN ) = IDTHCN
       ! jpp:
       IF ( IDECHBr3  /= 0 ) IDEMS(IDECHBr3 ) = IDTCHBr3
       IF ( IDECH2Br2 /= 0 ) IDEMS(IDECH2Br2) = IDTCH2Br2
@@ -2854,7 +2869,8 @@
          WRITE( 6, 115 ) '          + 5 for aromatics (B,T,X,C2H2,C2H4)'
          WRITE( 6, 115 ) '          + 1 for NAP'  ! hotp
          WRITE( 6, 115 ) '          + 1 for MOH'
-         WRITE( 6, 115 ) 'NEMANTHRO: 19 max'
+         WRITE( 6, 115 ) '          + 1 for HCN'
+         WRITE( 6, 115 ) 'NEMANTHRO: 20 max'
          WRITE( 6, 120 ) 'THIS NEMANTHRO: ', NEMANTHRO
          WRITE( 6, 115 ) '---------------------------------------------'
          WRITE( 6, 115 ) 'NEMBIOG:    1 for isoprene'
@@ -2891,6 +2907,7 @@
          WRITE( 6, 120 ) 'IDEGLYC ', IDEGLYC
          WRITE( 6, 120 ) 'IDEHAC  ', IDEHAC
          WRITE( 6, 120 ) 'IDEMOH  ', IDEMOH
+         WRITE( 6, 120 ) 'IDEHCN  ', IDEHCN
          WRITE( 6, 120 ) 'IDECHBr3 ', IDECHBr3 
          WRITE( 6, 120 ) 'IDECH2Br2', IDECH2Br2 
          WRITE( 6, 120 ) 'IDEBr2   ', IDEBr2 
@@ -3055,6 +3072,7 @@
          IF ( NAMEGAS(I) == 'GLYC'   ) IDGLYC    = I
          IF ( NAMEGAS(I) == 'HAC'    ) IDHAC     = I
          IF ( NAMEGAS(I) == 'MOH'    ) IDMOH     = I
+         IF ( NAMEGAS(I) == 'HCN'    ) IDHCN     = I
          IF ( NAMEGAS(I) == 'APAN'   ) IDAPAN    = I
          IF ( NAMEGAS(I) == 'ENPAN'  ) IDENPAN   = I
          IF ( NAMEGAS(I) == 'MPAN'   ) IDMPAN    = I
@@ -4119,6 +4137,7 @@
       IDGLYC    = 0
       IDHAC     = 0
       IDMOH     = 0
+      IDHCN     = 0
       IDMPN     = 0
 
       IDAPAN    = 0
@@ -4245,6 +4264,7 @@
       IDTNIPAN  = 0
       IDTMPN    = 0
       IDTMOH    = 0
+      IDTHCN    = 0
       ! +++++++++++++++++
       ! jpp for bromine
       ! 6/5/09
@@ -4771,6 +4791,7 @@
       IDEGLYC   = 0
       IDEHAC    = 0
       IDEMOH    = 0
+      IDEHCN    = 0
       IDECHBr3  = 0 ! jpp, 8/30/07
       IDECH2Br2 = 0 ! jpp, 9/16/07
       IDEBr2    = 0 ! jpp, 3/2/10
@@ -4799,6 +4820,7 @@
       IDBFMGLY  = 0
       IDBFHAC   = 0
       IDBFMOH   = 0
+      IDBFHCN   = 0
       ! SOAudpate: for gas phase NAP chemistry (hotp 6/24/09)
       ! semivolpoa5: IVOCs (hotp 3/30/09)
       IDBFNAP   = 0
@@ -4829,6 +4851,7 @@
       IDBGLYX   = 0
       IDBMGLY   = 0
       IDBMOH    = 0
+      IDBHCN    = 0
 !kjw
       IDBCH4    = 0
 !kjw

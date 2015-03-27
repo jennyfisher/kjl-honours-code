@@ -96,6 +96,7 @@
 !                              POA simulation (H. Pye)
 !  20 Aug 2013 - R. Yantosca - Removed "define.h", this is now obsolete
 !  03 Mar 2015 - J. Fisher   - Add MOH following example of HAC
+!  12 Mar 2015 - J. Fisher   - Add HCN (based on offline code)
 !******************************************************************************
 !
       IMPLICIT NONE
@@ -126,7 +127,8 @@
 
       ! SOAupdate: increase NBFMAX for NAP (hotp 6/25/09)
       ! +1 for MOH
-      INTEGER, PARAMETER          :: NBFMAX = 21
+      ! +1 for HCN
+      INTEGER, PARAMETER          :: NBFMAX = 22
 
       INTEGER                     :: NBFTRACE
       INTEGER                     :: BFTRACE(NBFMAX) 
@@ -252,6 +254,7 @@
       USE GIGC_Input_Opt_Mod,   ONLY : OptInput
       USE GIGC_State_Chm_Mod,   ONLY : ChmState
       USE GIGC_State_Met_Mod,   ONLY : MetState
+      USE HCN_CH3CN_MOD,        ONLY : EMIS_CO_df
       USE STREETS_ANTHRO_MOD,   ONLY : GET_SE_ASIA_MASK
       USE TIME_MOD,             ONLY : GET_DAY_OF_WEEK_LT,  GET_YEAR
       USE TRACERID_MOD,         ONLY : IDBFCO,  IDBFNO,  IDTACET
@@ -263,11 +266,12 @@
       USE TRACERID_MOD,         ONLY : IDTC2H2, IDTGLYC, IDTHAC
       USE TRACERID_MOD,         ONLY : IDTNO2,  IDTNH3,  IDTSO2
       USE TRACERID_MOD,         ONLY : IDTBCPO, IDTOCPO, IDTMOH
+      USE TRACERID_MOD,         ONLY : IDTHCN
       USE TRANSFER_MOD,         ONLY : TRANSFER_2D
       USE TRACERID_MOD,         ONLY : IDBFBENZ,IDBFTOLU,IDBFXYLE
       USE TRACERID_MOD,         ONLY : IDBFGLYX,IDBFMGLY,IDBFC2H4
       USE TRACERID_MOD,         ONLY : IDBFC2H2,IDBFGLYC,IDBFHAC
-      USE TRACERID_MOD,         ONLY : IDBFMOH
+      USE TRACERID_MOD,         ONLY : IDBFMOH, IDBFHCN
 ![eml 
       USE TIME_MOD,             ONLY : GET_HISTYR
       USE REGRID_A2A_MOD,       ONLY : DO_REGRID_A2A
@@ -410,6 +414,7 @@
          !      HAC       19                   [kg     /box/year]
          !      NAP       20                   [kg C   /box/year]
          !      MOH       21                   [kg     /box/year]
+         !      HCN       22                   [kg     /box/year]
          !
          ! These emissions are converted to [molec/cm3/s] (or 
          ! [molec C/cm3/s] for hydrocarbons), since the chemistry
@@ -969,6 +974,22 @@
                ! Define MOLWT for use below
                MOLWT(N) = 32d-3
 
+            ELSE IF ( NN == IDTHCN  ) THEN
+
+               !----------------
+               ! Biofuel HCN
+               !----------------
+
+               ! Scale HCN to CO biofuel emissions from external file (same as
+               ! used in offline simulation). Molar emission ratio is 0.016
+               ! HCN/CO. EMIS_CO_df is in molec CO /cm2/s. Write
+               ! straight into the BIOFUEL array - but will divide by
+               ! box height below to get this in the right units.
+               BIOFUEL(N,:,:) = EMIS_CO_df * 1.6d-2
+
+               ! Define MOLWT for use below
+               MOLWT(N) = 27d-3
+
             ENDIF
          ENDDO
 
@@ -1016,9 +1037,13 @@
             NN = BFTRACE(N)
 
             ! Biofuel emissions in [molec/cm3/s]
-            BIOFUEL(N,I,J) = BIOFUEL_KG(N,I,J)                  * 
+            IF ( NN == IDTHCN ) THEN
+               BIOFUEL(N,I,J) = BIOFUEL(N,I,J) / BXHEIGHT_CM
+            ELSE
+               BIOFUEL(N,I,J) = BIOFUEL_KG(N,I,J)                  * 
      &                       ( 6.023d23 / MOLWT(N)            ) /
      &                       ( 365d0 * 86400d0 * BOXVL(I,J,1,State_Met))
+            ENDIF
 
             !-----------------------------------------------------------
             ! RETRO anthropogenic emissions include residential biofuel,
@@ -1093,7 +1118,8 @@
      &                    (NN /= IDTBENZ) .and. (NN /= IDTTOLU) .and.
      &                    (NN /= IDTXYLE) .and. (NN /= IDTC2H4) .and.
      &                    (NN /= IDTC2H2) .and. (NN /= IDTGLYC) .and.          
-     &                    (NN /= IDTHAC ) .and. (NN /= IDTNAP ) ) THEN
+     &                    (NN /= IDTHAC ) .and. (NN /= IDTNAP ) .and.
+     &                    (NN /= IDTHCN ) ) THEN
 
                         ! Get EPA/NEI biofuel [molec/cm2/s or atoms C/cm2/s]
                         EPA_NEI = GET_EPA_BIOFUEL( I, J, NN, WEEKDAY )
@@ -1120,7 +1146,7 @@
      &                    (NN /= IDTGLYC) .AND. (NN /= IDTHAC ) .AND.
      &                    (NN /= IDTBENZ) .AND. (NN /= IDTTOLU) .AND.
      &                    (NN /= IDTXYLE) .AND. (NN /= IDTC2H4) .AND. 
-     &                    (NN /= IDTC2H2) ) THEN
+     &                    (NN /= IDTC2H2) .AND. (NN /= IDTHCN) ) THEN
 
                         BIOFUEL(N,I,J) = 0.d0
 
@@ -1544,10 +1570,10 @@
 
       USE TRACERID_MOD, ONLY : IDBFGLYX, IDBFMGLY, IDBFBENZ, IDBFTOLU
       USE TRACERID_MOD, ONLY : IDBFXYLE, IDBFC2H4, IDBFC2H2, IDBFGLYC
-      USE TRACERID_MOD, ONLY : IDBFHAC,  IDBFMOH
+      USE TRACERID_MOD, ONLY : IDBFHAC,  IDBFMOH,  IDBFHCN
       USE TRACERID_MOD, ONLY : IDTGLYX,  IDTMGLY,  IDTBENZ,  IDTTOLU
       USE TRACERID_MOD, ONLY : IDTXYLE,  IDTC2H4,  IDTC2H2,  IDTGLYC
-      USE TRACERID_MOD, ONLY : IDTHAC,   IDTMOH
+      USE TRACERID_MOD, ONLY : IDTHAC,   IDTMOH,   IDTHCN
       ! SOAupdate: for gas phase NAP chemistry, NAP biofuel emis (hotp 6/24/09)
       USE TRACERID_MOD, ONLY : IDTNAP
       USE TRACERID_MOD, ONLY : IDBFNAP
@@ -1583,6 +1609,7 @@
       IF ( IDBFGLYC /= 0 ) NBFTRACE = NBFTRACE + 1 
       IF ( IDBFHAC  /= 0 ) NBFTRACE = NBFTRACE + 1 
       IF ( IDBFMOH  /= 0 ) NBFTRACE = NBFTRACE + 1 
+      IF ( IDBFHCN  /= 0 ) NBFTRACE = NBFTRACE + 1 
       ! SOAupdate: for gas phase NAP chemistry, NAP bf emiss (hotp 6/24/09)
       IF ( IDBFNAP  /= 0 ) NBFTRACE = NBFTRACE + 1
 
@@ -1610,6 +1637,7 @@
       ! SOAupdate: for gas phase NAP chemistry, NAP bf emiss (hotp 6/24/09)
       IF ( IDBFNAP  /= 0 ) BFTRACE(IDBFNAP ) = IDTNAP
       IF ( IDBFMOH  /= 0 ) BFTRACE(IDBFMOH ) = IDTMOH
+      IF ( IDBFHCN  /= 0 ) BFTRACE(IDBFHCN ) = IDTHCN
 
       ! Echo biofuel tracer information
       IF ( am_I_Root ) THEN
@@ -1636,11 +1664,14 @@
 !        IDBFCO, etc from "tracerid_mod.f" (bmy, 11/6/02)
 !  (6 ) Replace LWOODCO w/ LBIOFUEL from "logical_mod.f" (bmy, 7/19/04)
 !  (7 ) Remove reference to TRACERID_MOD, it's obsolete (bmy, 10/3/05)
+! 12 Mar 2015 - J. Fisher - Now read domestic fuel emissions for HCN
 !******************************************************************************
 !
       ! References to F90 modules
-      USE ERROR_MOD,    ONLY : ALLOC_ERR
-      USE LOGICAL_MOD,  ONLY : LBIOFUEL
+      USE ERROR_MOD,     ONLY : ALLOC_ERR
+      USE HCN_CH3CN_MOD, ONLY : INIT_HCN_CH3CN
+      USE LOGICAL_MOD,   ONLY : LBIOFUEL
+      USE TRACERID_MOD,  ONLY : IDTHCN
 
       USE CMN_SIZE_MOD  ! Size parameters, etc
 
@@ -1659,6 +1690,11 @@
          ALLOCATE( BIOFUEL_KG( NBFTRACE, IIPAR, JJPAR ), STAT=AS )
          IF ( AS /= 0 ) CALL ALLOC_ERR( 'BIOFUEL_KG' )
          BIOFUEL_KG = 0d0
+
+         ! If we're including HCN, need to read emissions to scale from
+         ! the HCN simulation. These are not time varying, so we can do
+         ! this once at the start.
+         CALL INIT_HCN_CH3CN
       ENDIF
 
       ! Return to calling program

@@ -347,7 +347,8 @@ biofuel_mod.o               : biofuel_mod.F                                  \
                               diag_mod.o              emep_mod.o             \
                               epa_nei_mod.o           future_emissions_mod.o \
                               logical_mod.o           streets_anthro_mod.o   \
-                              tracerid_mod.o          tracer_mod.o
+                              tracerid_mod.o          tracer_mod.o           \
+                              hcn_ch3cn_mod.o
 
 biofit.o                    : biofit.F
 

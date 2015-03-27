@@ -95,6 +95,9 @@
       PUBLIC :: CHEM_HCN_CH3CN
       PUBLIC :: CLEANUP_HCN_CH3CN
       PUBLIC :: EMISS_HCN_CH3CN
+      PUBLIC :: INIT_HCN_CH3CN
+      ! ... and this array
+      PUBLIC :: EMIS_CO_df
 
       !=================================================================
       ! MODULE VARIABLES
@@ -851,10 +854,10 @@
 
 !------------------------------------------------------------------------------
 
-      SUBROUTINE READ_EMISSIONS
+      SUBROUTINE READ_DOM_CO_EMISSIONS
 !
 !******************************************************************************
-!  Subroutine READ_EMISSIONS reads the domestic fossil fuel emissions from
+!  Subroutine READ_DOM_CO_EMISSIONS reads the domestic fossil fuel emissions from
 !  disk. (bmy, 6/29/05, 10/3/05)
 !
 !  Arguments as Output:
@@ -879,7 +882,7 @@
       CHARACTER(LEN=255)  :: FILENAME
 
       !=================================================================
-      ! READ_EMISSIONS begins here!
+      ! READ_DOM_CO_EMISSIONS begins here!
       !=================================================================
 
       ! Define the binary punch file name
@@ -887,12 +890,12 @@
      &           'HCN_200507/domfos_CO_for_TRACEP.'       // 
      &           GET_NAME_EXT_2D() // '.' // GET_RES_EXT() 
       
-      ! Write file name to stdout
-      WRITE( 6, 100 ) TRIM( FILENAME )
- 100  FORMAT( 'READ_EMISSIONS: Reading ', a )
-
       ! Read time-of-day and day-of-week scale factors for GEIA emissions
       CALL READ_TODX( TODN, TODH, TODB, SCNR89 )
+
+      ! Write file name to stdout
+      WRITE( 6, 100 ) TRIM( FILENAME )
+ 100  FORMAT( 'READ_DOM_CO_EMISSIONS: Reading ', a )
 
       ! Read CO (tracer #4): aseasonal
       CALL READ_BPCH2( FILENAME, 'ANTHSRCE',    4,  
@@ -903,7 +906,7 @@
       CALL TRANSFER_2D( ARRAY(:,:,1), EMIS_CO_df )
 
       ! Return to calling program
-      END SUBROUTINE READ_EMISSIONS
+      END SUBROUTINE READ_DOM_CO_EMISSIONS
 
 !------------------------------------------------------------------------------
 
@@ -955,7 +958,7 @@
       CALL DEFINE_DF_REGIONS
 
       ! Read domestic fossil fuel emissions
-      CALL READ_EMISSIONS
+      CALL READ_DOM_CO_EMISSIONS
 
       ! Index of HCN tracers
       HCN_INDEX(:)   = (/ 1, 3, 4, 5, 6  /)

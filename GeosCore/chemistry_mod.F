@@ -98,6 +98,7 @@
       USE GLOBAL_CH4_MOD,     ONLY : CHEMCH4
       USE H2_HD_MOD,          ONLY : CHEM_H2_HD
       USE HCN_CH3CN_MOD,      ONLY : CHEM_HCN_CH3CN
+      USE HCN_CH3CN_MOD,      ONLY : OCEAN_SINK_HCN
       USE ISOROPIAII_MOD,     ONLY : DO_ISOROPIAII
       USE MERCURY_MOD,        ONLY : CHEMMERCURY
       USE METHANOL_MOD,       ONLY : CLOUD_SINK_METHANOL
@@ -117,6 +118,7 @@
       USE TRACERID_MOD,       ONLY : IDTISOP
       USE TRACERID_MOD,       ONLY : IDTDST1
       USE TRACERID_MOD,       ONLY : IDTMOH
+      USE TRACERID_MOD,       ONLY : IDTHCN
 #if   defined( TOMAS )
       USE TOMAS_MOD,          ONLY : DO_TOMAS  !(win, 7/14/09)
       USE TRACERID_MOD,       ONLY : IDTNK1    !(win, 7/14/09)
@@ -400,6 +402,11 @@
             IF ( IDTMOH /= 0 ) THEN
                 CALL OCEAN_SINK_METHANOL( STT(:,:,1,IDTMOH), State_Met )
                 CALL CLOUD_SINK_METHANOL( STT(:,:,:,IDTMOH), State_Met )
+            ENDIF
+             
+            ! Remove HCN ocean sink
+            IF ( IDTHCN /= 0 ) THEN
+               CALL OCEAN_SINK_HCN( STT(:,:,1,IDTHCN), State_Met ) 
             ENDIF
              
          !---------------------------------

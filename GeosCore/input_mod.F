@@ -4446,6 +4446,7 @@
       USE TRACER_MOD,   ONLY : ITS_A_CO2_SIM,        ITS_A_FULLCHEM_SIM
       USE TRACER_MOD,   ONLY : ITS_A_MERCURY_SIM,    ITS_A_RnPbBe_SIM
       USE TRACER_MOD,   ONLY : ITS_A_TAGOX_SIM,      ITS_A_CH3I_SIM
+      USE TRACER_MOD,   ONLY : ITS_A_HCN_SIM
       USE TRACER_MOD,   ONLY : SALA_REDGE_um,        ITS_A_CH4_SIM
       USE TRACER_MOD,   ONLY : ITS_A_POPS_SIM
       USE TRACERID_MOD, ONLY : NEMANTHRO
@@ -4617,8 +4618,12 @@
       !--------------------------
       CALL SPLIT_ONE_LINE( SUBSTRS, N, -1, 'read_diagnostic_menu:11' )
       READ( SUBSTRS(1), * ) ND09
-      CALL SET_TINDEX( am_I_Root, 
-     &     09, ND09, SUBSTRS(2:N), N-1, N_TRACERS+PD09 )
+      IF ( ITS_A_HCN_SIM() ) THEN
+         CALL SET_TINDEX( am_I_Root, 
+     &        09, ND09, SUBSTRS(2:N), N-1, N_TRACERS+PD09 )
+      ELSE
+         CALL SET_TINDEX( am_I_Root, 09, ND09, SUBSTRS(2:N), N-1, PD09 )
+      ENDIF
 
       !--------------------------
       ! ND10: Free

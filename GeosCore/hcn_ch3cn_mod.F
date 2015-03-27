@@ -93,6 +93,7 @@
 
       ! ... except these routines
       PUBLIC :: CHEM_HCN_CH3CN
+      PUBLIC :: OCEAN_SINK_HCN
       PUBLIC :: CLEANUP_HCN_CH3CN
       PUBLIC :: EMISS_HCN_CH3CN
       PUBLIC :: INIT_HCN_CH3CN
@@ -851,6 +852,143 @@
 
       ! Return to calling program
       END SUBROUTINE CHEM_HCN_CH3CN
+
+!------------------------------------------------------------------------------
+
+      SUBROUTINE OCEAN_SINK_HCN( HCN, State_Met )
+!
+!******************************************************************************
+!  Subroutine ocean_sink_HCN computes the loss of HCN due to ocean uptake for
+!  use in the full chemistry code (jaf, 3/27/15)
+!
+!  NOTES:
+!  27 Mar 2015 - Code copied from the chemistry routines from tagged HCN
+!******************************************************************************
+! 
+! !USES:
+!
+      USE CMN_DIAG_MOD
+      USE CMN_SIZE_MOD
+      USE DIAG_MOD,           ONLY : AD09, AD09_em
+      USE GIGC_State_Met_Mod, ONLY : MetState
+      USE GRID_MOD,           ONLY : GET_AREA_CM2
+      USE TIME_MOD,           ONLY : GET_TS_CHEM
+!
+! !INPUT PARAMETERS:
+!
+      TYPE(MetState), INTENT(IN)    :: State_Met   ! Meteorology State object
+!
+! !INPUT/OUTPUT PARAMETERS:
+!
+      REAL*8, INTENT(INOUT) :: HCN(IIPAR,JJPAR)   ! HCN mass [kg]
+!
+! !LOCAL VARIABLES:
+!      
+      INTEGER                :: I,      J
+      REAL*8                 :: DTCHEM,     AREA_CM2
+      REAL*8                 :: U,    TC,   SC,    KL,  KG
+      REAL*8                 :: KKG,  CL,   SR,    CG,   FLUX
+      REAL*8                 :: HENCONST,   OCEAN_HCN,   FOCEAN
+
+      ! Undersaturation ratios for HCN/CH3CN in seawater
+      REAL*8, PARAMETER      :: ALPHA_HCN   = 0.21d0
+
+      ! Coefficients for fitting the Schmdit number for HCN in seawater
+      REAL*8, PARAMETER      :: A0          = 2008.917d0
+      REAL*8, PARAMETER      :: A1          =  -83.235d0
+      REAL*8, PARAMETER      :: A2          =    1.348d0
+      REAL*8, PARAMETER      :: A3          =   -0.009d0
+      
+      ! External functions
+      REAL*8, EXTERNAL       :: BOXVL
+     
+      !=================================================================
+      ! OCEAN_SINK_HCN begins here! 
+      !=================================================================
+
+      ! Chemistry timestep in seconds
+      DTCHEM = GET_TS_CHEM() * 60d0
+
+      ! Loop over grid boxes
+!$OMP PARALLEL DO
+!$OMP+DEFAULT( SHARED )
+!$OMP+PRIVATE( I,   J,   FOCEAN,   OCEAN_HCN, AREA_CM2 )
+!$OMP+PRIVATE( U,   TC,  HENCONST, SC,        KL       )
+!$OMP+PRIVATE( KG,  KKG, CG,       FLUX )
+!$OMP+SCHEDULE( DYNAMIC )
+      DO J = 1, JJPAR
+      DO I = 1, IIPAR
+
+         ! Fraction of a grid box that is ocean
+         FOCEAN          = 1d0 - State_Met%FRCLND(I,J) 
+
+         ! Initialize HCN [kg] lost into the ocean
+         OCEAN_HCN       = 0d0
+
+         ! Make sure there is > 50% ocean (not ice) in the grid box
+         IF ( FOCEAN > 0.5d0 .AND. State_Met%ALBD(I,J) <= 0.4d0 ) THEN
+
+            ! Grid box area in [cm2]
+            AREA_CM2  = GET_AREA_CM2( I, J, 1 ) 
+            
+            ! Wind speed [m/s] at 10m above the surface 
+            U            = SQRT( State_Met%U10M(I,J)**2 + 
+     &                           State_Met%V10M(I,J)**2 )
+
+            ! Surface temperature [C]
+            TC           = State_Met%TS(I,J) - 273.15d0  
+
+            ! Henry's law constant for HCN [unitless]
+            HENCONST = 7.93d4 * EXP( -5000d0 / State_Met%TS(I,J) ) 
+            
+            ! SC is Schmidt # for HCN in seawater [unitless]
+            SC       = A0 + TC * ( A1 + TC * ( A2 + TC * ( A3 )))
+
+            ! KL: conductance for mass transfer in liquid phase 
+            ! (Nightingale 2000b), which has unit of [cm/h]
+            KL       = ( 0.24d0*U*U + 0.061d0*U ) * SQRT( 600d0/SC )
+
+            ! KG: conductance for mass transfer in gas phase (Asher 1997)
+            ! Convert from m/s to cm/h by multiplying 360000
+            KG       = ( 15.3d0 + 940.6d0 * U ) 
+
+            ! KKG: transfer velocity on a gas phase basis (Liss & Slater 1974)
+            ! Convert from [cm/h] to [cm/s] by dividing 3600
+            KKG      = 2.78d-4 * KL * KG / ( KL + HENCONST * KG )
+
+            ! Bulk concentration of HCN in gas phase [kg/cm3]
+            CG       = HCN(I,J) / BOXVL(I,J,1,State_Met)
+
+            ! Air-to-sea flux of HCN [kg/cm2/s]
+            FLUX     = ALPHA_HCN * KKG * CG     
+
+            ! Amount of tagged tracer lost to ocean [kg]
+            OCEAN_HCN = FLUX * FOCEAN * AREA_CM2 * DTCHEM
+
+            ! Subtract ocean loss from STT array [kg/box/step]
+            HCN(I,J) = MAX( HCN(I,J) - OCEAN_HCN, 0d0 )
+
+            ! Error trap (loss can't be greater than total)
+            IF ( OCEAN_HCN > HCN(I,J) ) OCEAN_HCN = HCN(I,J)
+
+         ELSE
+            ! Zero over land/ice for diagnostics
+            OCEAN_HCN = 0d0
+         ENDIF
+
+         !--------------------------------------------------------------
+         ! ND09 diag: Save HCN ocean uptake in [molec/cm2/s]
+         !--------------------------------------------------------------
+         IF ( ND09 > 0 .AND. OCEAN_HCN > 0 ) THEN
+            AD09_em(I,J,5) = AD09_em(I,J,5) + OCEAN_HCN * XNUMOL_HCN /
+     &                                        ( AREA_CM2 * DTCHEM )
+         ENDIF
+      ENDDO
+      ENDDO
+!$OMP END PARALLEL DO
+
+      ! Return to calling program
+      END SUBROUTINE OCEAN_SINK_HCN
 
 !------------------------------------------------------------------------------
 

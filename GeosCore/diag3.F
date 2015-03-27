@@ -811,6 +811,7 @@
 !
       IF ( ND09 > 0 ) THEN
 
+      IF ( Input_Opt%ITS_A_HCN_SIM ) THEN
          ! Binary punch file
          DO M = 1, TMAX(9)
             N  = TINDEX(9,M)
@@ -864,6 +865,26 @@
      &                     JFIRST,    LFIRST,    ARRAY(:,:,1) )
             ENDIF
          ENDDO
+      ELSE IF ( Input_Opt%ITS_A_FULLCHEM_SIM ) THEN
+
+          !---------------------------
+          ! HCN ocean uptake
+          !---------------------------
+          CATEGORY     = 'HCN-SRCE'
+          UNIT         = 'molec/cm2/s'
+          NN           = 5
+          SCALEX       = SCALECHEM
+
+          ! Scale data
+          ARRAY(:,:,1) = AD09_em(:,:,NN) / SCALEX
+ 
+          ! Write to disk
+          CALL BPCH2( IU_BPCH,   MODELNAME, LONRES,   LATRES,
+     &                HALFPOLAR, CENTER180, CATEGORY, NN,
+     &                UNIT,      DIAGb,     DIAGe,    RESERVED,
+     &                IIPAR,     JJPAR,     1,        IFIRST,
+     &                JFIRST,    LFIRST,    ARRAY(:,:,1) )
+      ENDIF
       ENDIF
 !
 !******************************************************************************

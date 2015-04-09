@@ -205,7 +205,9 @@ CONTAINS
 ! !USES:
 !
     USE CMN_SIZE_MOD
+    USE CMN_DIAG_MOD
     USE DAO_MOD,            ONLY : CONVERT_UNITS
+    USE DIAG_MOD,           ONLY : AD09
     USE ERROR_MOD,          ONLY : DEBUG_MSG
     USE ERROR_MOD,          ONLY : GEOS_CHEM_STOP
     USE GIGC_ErrCode_Mod
@@ -220,6 +222,7 @@ CONTAINS
     USE TRACERID_MOD,       ONLY : IDTCHBr3
     USE TRACERID_MOD,       ONLY : IDTCH2Br2
     USE TRACERID_MOD,       ONLY : IDTCH3Br
+    USE TRACERID_MOD,       ONLY : IDTHCN
     USE TROPOPAUSE_MOD,     ONLY : GET_MIN_TPAUSE_LEVEL
     USE TROPOPAUSE_MOD,     ONLY : GET_TPAUSE_LEVEL
     USE TROPOPAUSE_MOD,     ONLY : ITS_IN_THE_TROP
@@ -282,6 +285,7 @@ CONTAINS
     CHARACTER(LEN=16) :: STAMP
     INTEGER           :: I,    J,      L,   N,   NN
     REAL*8            :: dt,   P,      k,   M0,  RC,     M
+    REAL*8            :: K0,   K1
     REAL*8            :: TK,   RDLOSS, T1L, mOH, BryDay, BryNight
     LOGICAL           :: LLINOZ
     LOGICAL           :: LPRT
@@ -451,6 +455,7 @@ CONTAINS
        !   (1) CHBr3  
        !   (2) CH2Br2  
        !   (3) CH3Br
+       !   (4) HCN
        !========================================
 
        !$OMP PARALLEL DO &
@@ -509,6 +514,26 @@ CONTAINS
                    STT(I,J,L,IDTCH2Br2) = STT(I,J,L,IDTCH2Br2) - T1L
                    SCHEM_TEND(I,J,L,IDTCHBr3) = &
                      SCHEM_TEND(I,J,L,IDTCHBr3) - T1L
+                ENDIF
+
+                !=============!
+                ! HCN + OH !
+                !=============!
+                IF ( IDTHCN .gt. 0 ) THEN
+                   K0 = 4.28d-33 
+                   K1 = 4.25d-13 * EXP ( -1150d0 / TK )
+                   ! RC is 3-body rate in cm3/molec/s
+                   RC = ( K0 * M * K1 / ( K0 * M + K1 ) ) * (0.8 ** &
+                         (1d0 / ( 1d0 + ( LOG10(K0 * M / K1)) ** 2d0 )))
+                   RDLOSS = MIN( RC * mOH * DTCHEM, 1d0 )
+                   T1L    = STT(I,J,L,IDTHCN) * RDLOSS
+                   STT(I,J,L,IDTHCN) = STT(I,J,L,IDTHCN) - T1L
+                   SCHEM_TEND(I,J,L,IDTHCN) = &
+                     SCHEM_TEND(I,J,L,IDTHCN) - T1L
+
+                   ! ND09 diagnostic: HCN loss via OH [kg]
+                   IF ( ND09 > 0 .and. L <= Input_Opt%LD09 ) &
+                      AD09(I,J,L,1) = AD09(I,J,L,1) + T1L
                 ENDIF
 
              ENDDO ! J

@@ -270,6 +270,7 @@
       INTEGER :: IT_IS_A_MERCURY_SIM
       INTEGER :: IT_IS_A_TAGOX_SIM
       INTEGER :: IT_IS_A_H2HD_SIM
+      INTEGER :: IT_IS_A_HCN_SIM
       INTEGER :: N_TRACERS
       LOGICAL :: LDUST
       LOGICAL :: LCARB
@@ -294,6 +295,7 @@
       IT_IS_A_MERCURY_SIM  = Input_Opt%ITS_A_MERCURY_SIM  
       IT_IS_A_TAGOX_SIM    = Input_Opt%ITS_A_TAGOX_SIM 
       IT_IS_A_H2HD_SIM     = Input_Opt%ITS_A_H2HD_SIM
+      IT_IS_A_HCN_SIM      = Input_Opt%ITS_A_HCN_SIM
 
       ! Assume success
       RC                   = GIGC_SUCCESS
@@ -428,7 +430,11 @@
       IF ( ND09 > 0 ) THEN
          LD09 = MIN( ND09, LLPAR )
 
-         ALLOCATE( AD09( IIPAR, JJPAR, LD09, N_TRACERS ), STAT=AS )
+         IF ( IT_IS_A_HCN_SIM ) THEN 
+            ALLOCATE( AD09( IIPAR, JJPAR, LD09, N_TRACERS ), STAT=AS )
+         ELSE
+            ALLOCATE( AD09( IIPAR, JJPAR, LD09, 1 ), STAT=AS )
+         ENDIF
          IF ( AS /= 0 ) CALL ALLOC_ERR( 'AD09' )
 
          ALLOCATE( AD09_em( IIPAR, JJPAR, PD09 ), STAT=AS )

@@ -868,6 +868,23 @@
       ELSE IF ( Input_Opt%ITS_A_FULLCHEM_SIM ) THEN
 
           !---------------------------
+          ! HCN+OH in strat
+          !---------------------------              
+          CATEGORY  = 'HCN-PL-$'
+          UNIT      = 'kg'
+              
+          DO L = 1, LD09
+             ARRAY(:,:,L) = AD09(:,:,L,1)
+          ENDDO
+
+          ! Save to disk
+          CALL BPCH2( IU_BPCH,   MODELNAME, LONRES,   LATRES,
+     &                HALFPOLAR, CENTER180, CATEGORY, IDTHCN,
+     &                UNIT,      DIAGb,     DIAGe,    RESERVED,
+     &                IIPAR,     JJPAR,     LD09,     IFIRST,
+     &                JFIRST,    LFIRST,    ARRAY(:,:,1:LD09) )
+
+          !---------------------------
           ! HCN ocean uptake
           !---------------------------
           CATEGORY     = 'HCN-SRCE'

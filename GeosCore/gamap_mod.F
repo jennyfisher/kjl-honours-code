@@ -4591,56 +4591,81 @@
       IF ( ND09 > 0 ) THEN
          
          ! Number of tracers
-         NTRAC(09) = Input_Opt%N_TRACERS + 6
+         IF ( Input_Opt%ITS_A_FULLCHEM_SIM ) THEN 
+            NTRAC(09) = 2
 
-         ! Loop over tracers: HCN-PL-$
-         DO T = 1, NTRAC(09)-6
-            NAME (T,09) = Input_Opt%TRACER_NAME(T)
-            FNAME(T,09) = TRIM( Input_Opt%TRACER_NAME(T) ) 
-     &                    // ' lost via OH rxn'
+            T = 1
+            NAME (T,09) = 'HCN_OH'
+            FNAME(T,09) = 'HCN lost via OH rxn'
             UNIT (T,09) = 'kg'
-            INDEX(T,09) = T + ( SPACING * 38 )
+            INDEX(T,09) = IDTHCN + ( SPACING * 38 )
             MOLC (T,09) = 1
-            MWT  (T,09) = Input_Opt%TRACER_MW_KG(T)
+            MWT  (T,09) = 27e-3
             SCALE(T,09) = 1e0
-         ENDDO
+
+            T = 2
+            NAME (T,09) = 'HCN_O1D'
+            FNAME(T,09) = 'HCN lost via O1D rxn'
+            UNIT (T,09) = 'kg'
+            INDEX(T,09) = IDTHCN+1 + ( SPACING * 38 )
+            MOLC (T,09) = 1
+            MWT  (T,09) = 27e-3
+            SCALE(T,09) = 1e0
+         ELSE
+            NTRAC(09) = Input_Opt%N_TRACERS
+
+            ! Loop over tracers: HCN-PL-$
+            DO T = 1, NTRAC(09)
+               NAME (T,09) = Input_Opt%TRACER_NAME(T)
+               FNAME(T,09) = TRIM( Input_Opt%TRACER_NAME(T) ) 
+     &                       // ' lost via OH rxn'
+               UNIT (T,09) = 'kg'
+               INDEX(T,09) = T + ( SPACING * 38 )
+               MOLC (T,09) = 1
+               MWT  (T,09) = Input_Opt%TRACER_MW_KG(T)
+               SCALE(T,09) = 1e0
+            ENDDO
+         ENDIF
 
          ! Loop over tracers: HCN-SRCE
-         DO T = NTRAC(09)-6+1, NTRAC(09)
+         DO T = NTRAC(09)+1, NTRAC(09)+6
 
             ! Get tracer number, C number, scale factor, unit
-            INDEX(T,09) = ( T - Input_Opt%N_TRACERS ) + ( SPACING * 39 )
+            INDEX(T,09) = ( T - NTRAC(09) ) + ( SPACING * 39 )
             MOLC (T,09) = 1
             SCALE(T,09) = 1e0
             UNIT (T,09) = 'molec/cm2/s'
               
             ! Get name, longname, unit, mwt
-            IF ( T == Input_Opt%N_TRACERS+1 ) THEN
+            IF ( T == NTRAC(09)+1 ) THEN
                NAME (T,09) = 'HCNbb'
                FNAME(T,09) = 'HCN biomass emissions'
                MWT  (T,09) = 27d-3
-            ELSE IF ( T == Input_Opt%N_TRACERS+2 ) THEN
+            ELSE IF ( T == NTRAC(09)+2 ) THEN
                NAME (T,09) = 'CH3CNbb'
                FNAME(T,09) = 'CH3CN biomass emissions'
                MWT  (T,09) = 41d-3
-            ELSE IF ( T == Input_Opt%N_TRACERS+3 ) THEN
+            ELSE IF ( T == NTRAC(09)+3 ) THEN
                NAME (T,09) = 'HCNdf'
                FNAME(T,09) = 'HCN domestic FF emiss'
                MWT  (T,09) = 27d-3
-            ELSE IF ( T == Input_Opt%N_TRACERS+4 ) THEN
+            ELSE IF ( T == NTRAC(09)+4 ) THEN
                NAME (T,09) = 'CH3CNdf'
                FNAME(T,09) = 'CH3CN domestic FF emiss'
                MWT  (T,09) = 41d-3
-            ELSE IF ( T == Input_Opt%N_TRACERS+5 ) THEN
+            ELSE IF ( T == NTRAC(09)+5 ) THEN
                NAME (T,09) = 'HCNoc'
                FNAME(T,09) = 'HCN ocean uptake'
                MWT  (T,09) = 27d-3
-            ELSE IF ( T == Input_Opt%N_TRACERS+6 ) THEN
+            ELSE IF ( T == NTRAC(09)+6 ) THEN
                NAME (T,09) = 'CH3CNoc'
                FNAME(T,09) = 'CH3CN ocean uptake'
                MWT  (T,09) = 41d-3
             ENDIF
          ENDDO
+
+         NTRAC(09) = NTRAC(09)+6
+
       ENDIF
     
       !-------------------------------------      

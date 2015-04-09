@@ -433,7 +433,7 @@
          IF ( IT_IS_A_HCN_SIM ) THEN 
             ALLOCATE( AD09( IIPAR, JJPAR, LD09, N_TRACERS ), STAT=AS )
          ELSE
-            ALLOCATE( AD09( IIPAR, JJPAR, LD09, 1 ), STAT=AS )
+            ALLOCATE( AD09( IIPAR, JJPAR, LD09, 2 ), STAT=AS )
          ENDIF
          IF ( AS /= 0 ) CALL ALLOC_ERR( 'AD09' )
 

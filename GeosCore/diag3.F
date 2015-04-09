@@ -885,6 +885,20 @@
      &                JFIRST,    LFIRST,    ARRAY(:,:,1:LD09) )
 
           !---------------------------
+          ! HCN+O1D in strat
+          !---------------------------              
+          DO L = 1, LD09
+             ARRAY(:,:,L) = AD09(:,:,L,2)
+          ENDDO
+
+          ! Save to disk
+          CALL BPCH2( IU_BPCH,   MODELNAME, LONRES,   LATRES,
+     &                HALFPOLAR, CENTER180, CATEGORY, IDTHCN+1,
+     &                UNIT,      DIAGb,     DIAGe,    RESERVED,
+     &                IIPAR,     JJPAR,     LD09,     IFIRST,
+     &                JFIRST,    LFIRST,    ARRAY(:,:,1:LD09) )
+
+          !---------------------------
           ! HCN ocean uptake
           !---------------------------
           CATEGORY     = 'HCN-SRCE'

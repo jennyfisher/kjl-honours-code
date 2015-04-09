@@ -84,6 +84,7 @@ MODULE STRAT_CHEM_MOD
   REAL*8,  ALLOCATABLE, TARGET :: PROD(:,:,:,:)   ! Production rate [v/v/s]
   REAL*8,  ALLOCATABLE, TARGET :: LOSS(:,:,:,:)   ! Loss frequency [s-1]
   REAL*8,  ALLOCATABLE, TARGET :: STRAT_OH(:,:,:) ! Monthly mean OH [v/v]
+  REAL*8,  ALLOCATABLE, TARGET :: STRAT_O1D(:,:,:) ! Monthly mean O1D [v/v]
 
   CHARACTER(LEN=16)    :: GMI_TrName(NTR_GMI)     ! Tracer names in GMI
   INTEGER              :: Strat_TrID_GC(NTR_GMI)  ! Maps 1:NSCHEM to STT index
@@ -285,8 +286,8 @@ CONTAINS
     CHARACTER(LEN=16) :: STAMP
     INTEGER           :: I,    J,      L,   N,   NN
     REAL*8            :: dt,   P,      k,   M0,  RC,     M
-    REAL*8            :: K0,   K1
     REAL*8            :: TK,   RDLOSS, T1L, mOH, BryDay, BryNight
+    REAL*8            :: K0,   K1,     T2L, mO1D
     LOGICAL           :: LLINOZ
     LOGICAL           :: LPRT
     INTEGER           :: N_TRACERS
@@ -460,7 +461,8 @@ CONTAINS
 
        !$OMP PARALLEL DO &
        !$OMP DEFAULT( SHARED ) &
-       !$OMP PRIVATE( I, J, L, M, TK, RC, RDLOSS, T1L, mOH )
+       !$OMP PRIVATE( I, J, L, M, TK, RC, RDLOSS, T1L ) &
+       !$OMP PRIVATE( T2L, mO1D, K0, K1 )
        DO J=1,JJPAR
           DO I=1,IIPAR  
 
@@ -476,6 +478,10 @@ CONTAINS
 
                 ! OH number density [molec cm-3]
                 mOH = M * STRAT_OH(I,J,L)
+
+                ! O1D number density [molec cm-3]
+                ! O1D already in molec/cm3 so no need to convert
+                mO1D = STRAT_O1D(I,J,L)
 
                 ! Temperature at grid box (I,J,L) in K
                 TK = T(I,J,L)
@@ -517,12 +523,13 @@ CONTAINS
                 ENDIF
 
                 !=============!
-                ! HCN + OH !
+                ! HCN
                 !=============!
                 IF ( IDTHCN .gt. 0 ) THEN
+
+                   ! HCN + OH; RC is 3-body rate in cm3/molec/s
                    K0 = 4.28d-33 
                    K1 = 4.25d-13 * EXP ( -1150d0 / TK )
-                   ! RC is 3-body rate in cm3/molec/s
                    RC = ( K0 * M * K1 / ( K0 * M + K1 ) ) * (0.8 ** &
                          (1d0 / ( 1d0 + ( LOG10(K0 * M / K1)) ** 2d0 )))
                    RDLOSS = MIN( RC * mOH * DTCHEM, 1d0 )
@@ -531,9 +538,20 @@ CONTAINS
                    SCHEM_TEND(I,J,L,IDTHCN) = &
                      SCHEM_TEND(I,J,L,IDTHCN) - T1L
 
-                   ! ND09 diagnostic: HCN loss via OH [kg]
-                   IF ( ND09 > 0 .and. L <= Input_Opt%LD09 ) &
+                   ! HCN + O1D; RC in cm3/molec/s
+                   RC     = 7.7d-11 * EXP ( 100.d0 / TK )
+                   RDLOSS = MIN( RC * mO1D * DTCHEM, 1d0 )
+                   T2L    = STT(I,J,L,IDTHCN) * RDLOSS
+                   STT(I,J,L,IDTHCN) = STT(I,J,L,IDTHCN) - T2L
+                   SCHEM_TEND(I,J,L,IDTHCN) = &
+                     SCHEM_TEND(I,J,L,IDTHCN) - T2L
+
+                   ! ND09 diagnostic: HCN loss via OH and O1D [kg]
+                   IF ( ND09 > 0 .and. L <= Input_Opt%LD09 ) THEN
                       AD09(I,J,L,1) = AD09(I,J,L,1) + T1L
+                      AD09(I,J,L,2) = AD09(I,J,L,2) + T2L
+                   ENDIF
+
                 ENDIF
 
              ENDDO ! J
@@ -725,6 +743,7 @@ CONTAINS
     USE GIGC_ErrCode_Mod
     USE GIGC_Input_Opt_Mod, ONLY : OptInput
     USE GIGC_State_Chm_Mod, ONLY : ChmState
+    USE GLOBAL_O1D_MOD,     ONLY : O1D, GET_GLOBAL_O1D
     USE TIME_MOD,           ONLY : GET_MONTH
     USE TRANSFER_MOD,       ONLY : TRANSFER_3D
 
@@ -842,6 +861,13 @@ CONTAINS
     call transfer_3D( array, array2 )
 
     STRAT_OH(:,:,:) = ARRAY2
+
+    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ! Get stratospheric O1D mixing ratio [v/v] 
+    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    CALL GET_GLOBAL_O1D( M )
+
+    STRAT_O1D(:,:,:) = O1D
 
     DO N=1,NSCHEM
        NN = Strat_TrID_GMI(N)
@@ -1650,6 +1676,11 @@ CONTAINS
        IF ( AS /=0 ) CALL ALLOC_ERR( 'STRAT_OH' )
        STRAT_OH = 0d0
 
+       ! Allocate array to hold monthly mean O1D mixing ratio
+       ALLOCATE( STRAT_O1D( IIPAR, JJPAR, LLPAR ), STAT=AS )
+       IF ( AS /=0 ) CALL ALLOC_ERR( 'STRAT_O1D' )
+       STRAT_O1D = 0d0
+
        !===========!
        ! Tagged Ox !
        !===========!
@@ -1757,6 +1788,7 @@ CONTAINS
     IF ( ALLOCATED( PROD       ) ) DEALLOCATE( PROD       )
     IF ( ALLOCATED( LOSS       ) ) DEALLOCATE( LOSS       )
     IF ( ALLOCATED( STRAT_OH   ) ) DEALLOCATE( STRAT_OH   )
+    IF ( ALLOCATED( STRAT_O1D  ) ) DEALLOCATE( STRAT_O1D  )
     IF ( ALLOCATED( MInit      ) ) DEALLOCATE( MInit      )
     IF ( ALLOCATED( TPAUSEL    ) ) DEALLOCATE( TPAUSEL    )
     IF ( ALLOCATED( SCHEM_TEND ) ) DEALLOCATE( SCHEM_TEND )

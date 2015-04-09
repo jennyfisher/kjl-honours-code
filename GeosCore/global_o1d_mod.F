@@ -62,7 +62,7 @@
       USE BPCH2_MOD,     ONLY : GET_RES_EXT
       USE BPCH2_MOD,     ONLY : GET_TAU0
       USE BPCH2_MOD,     ONLY : READ_BPCH2
-      USE DIRECTORY_MOD, ONLY : DATA_DIR
+      USE DIRECTORY_MOD, ONLY : OH_DIR
       USE TRANSFER_MOD,  ONLY : TRANSFER_3D
 
       USE CMN_SIZE_MOD                  ! Size parameters
@@ -104,23 +104,23 @@
       ENDIF
 
       !=================================================================
-      ! Read Gabriele Curci's O1D (v5.03)
+      ! Update to use O1D from D. Jones (4/2015, jaf)
       !=================================================================
 
-      FILENAME = TRIM( DATA_DIR ) // 'hydrogen_200704/stratO1D.' //
-     &           GET_NAME_EXT()  // '.' // GET_RES_EXT()
+      FILENAME = TRIM( OH_DIR ) // 'O1D_3Dglobal.' // GET_NAME_EXT() // 
+     &                              '.'           // GET_RES_EXT()
 
       ! Echo some information to the standard output
       WRITE( 6, 110 ) TRIM( FILENAME )
  110  FORMAT( '     - GET_GLOBAL_O1D: Reading O1D from: ', a )
 
       ! Get the TAU0 value for the start of the given month
-      ! Assume "generic" year 1998
-      XTAU = GET_TAU0( THISMONTH, 1, 1998 )
+      ! Assume "generic" year 1985
+      XTAU = GET_TAU0( THISMONTH, 1, 1985 )
 
       ! Read O1D data from the binary punch file
-      CALL READ_BPCH2( FILENAME, 'SL-AVG-$', 2,  
-     &                 XTAU,      IIPAR,     JJPAR,      
+      CALL READ_BPCH2( FILENAME, 'CHEM-L=$', 1,     
+     &                 XTAU,      IGLOB,     JGLOB,      
      &                 LGLOB,     ARRAY,     QUIET=.TRUE. )
       
       ! Assign data from ARRAY to the module variable O1D
@@ -161,7 +161,7 @@
       INTEGER :: AS
 
       ! Allocate O1D array
-      ALLOCATE( O1D( IIPAR, JJPAR, LGLOB ), STAT=AS )
+      ALLOCATE( O1D( IIPAR, JJPAR, LLPAR ), STAT=AS )
       IF ( AS /= 0 ) CALL ALLOC_ERR( 'O1D' )
 
       ! Zero O1D array
